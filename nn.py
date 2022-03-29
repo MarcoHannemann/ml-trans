@@ -74,8 +74,10 @@ def predict(model, x, y):
     """
     pred = model.predict(x)
     if y is not None:
+        # case 1: "True" transpiration data is known (e.g. for Training data)
         return predictions_to_dataframe(y, pred)
     else:
+        # case 2: External prediction, target transpiration unknown
         return pred
 
 
@@ -108,21 +110,23 @@ def predict_fluxnet(model):
         plt.clf()
     predictions_all_stations.to_csv('output/fluxnet_predictions/flx_predictions.csv')
 
+ext_path = "data/fluxnet"
+ext_path = None
 
 # load data and set model options
 features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height"]
 train_data = load_model_data.load(path_csv="data/sfn/", freq="1D", features=features,
-                                  blacklist=True, external_prediction="data/fluxnet")
+                                  blacklist=True, external_prediction=ext_path)
 n_layers = 5
 n_neurons = 128
-
-model = create_model(inp_shape=10, activation="selu", n_layers=n_layers, n_neurons=n_neurons)
+input_shape = train_data["Xtrain"].shape[1]
+model = create_model(inp_shape=input_shape, activation="selu", n_layers=n_layers, n_neurons=n_neurons)
 
 # Callbacks
-# Early Stopping if validation loss doesn't change within specified epochs
+# Early Stopping if validation loss doesn't change within specified number of epochs
 es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=200)
 
-# Save model parameters
+# Store model parameters
 model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")
 checkpoint_path = f"checkpoint/{model_time}/cp.ckpt"
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
@@ -145,4 +149,5 @@ df_val = predict(model, train_data["Xval"], train_data["Yval"])
 plotting.scatter_density_plot(df_train, df_test, df_val, title=f"{n_layers} Layers, {n_neurons} Neurons")
 
 # Use model to predict T at FLUXNET sites
-predict_fluxnet(model)
+if ext_path:
+    predict_fluxnet(model)

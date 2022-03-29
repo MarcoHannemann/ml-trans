@@ -4,7 +4,7 @@ import glob
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
@@ -80,7 +80,7 @@ def drop_features(features):
     pass
 
 
-def split_data(data: pd.DataFrame, random_state=6) -> tuple:
+def split_data(data: pd.DataFrame, random_state=42) -> tuple:
     """Splits the data into training, testing, validation using sklearn.
 
     :param data: DataFrame containing whole dataset
@@ -114,10 +114,11 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     num_attributes = features
 
     # Pipeline for scaling and encoding. Scaling is performed after train_test_split to avoid data leakage.
-    # We use OneHotEncoder() for the categorical feature PFT, since we want to avoid
-    # any ranking in PFTs. Instead of PFT = {1..n}, we end up with one feature for each PFT being 0 or 1.
+    # We use OneHotEncoder() for the categorical feature PFT, since we want to avoid any ranking in PFTs.
+    # Instead of PFT = {1..n}, we end up with one feature for each PFT set to 0 or 1.
+
     num_pipeline = Pipeline([
-        ('minmax_scaler', MinMaxScaler())
+        ('minmax_scaler', StandardScaler())
     ])
     full_pipeline = ColumnTransformer([
         ('num', num_pipeline, num_attributes),
@@ -146,6 +147,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     y_test.to_csv('output/training/test_lables.csv', index=False)
     y_val.to_csv('output/training/val_lables.csv', index=False)
 
+    # if external prediction is activated, external input features are transformed here
     if ext_prediction is not None:
         ext_data = load_external(ext_prediction)
         for sitename, df in ext_data.items():
