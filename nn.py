@@ -114,17 +114,17 @@ ext_path = "data/fluxnet"
 ext_path = None
 
 # load data and set model options
-features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height"]
+features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", "fpar"]
 train_data = load_model_data.load(path_csv="data/sfn/", freq="1D", features=features,
                                   blacklist=True, external_prediction=ext_path)
 n_layers = 5
-n_neurons = 128
+n_neurons = 256
 input_shape = train_data["Xtrain"].shape[1]
 model = create_model(inp_shape=input_shape, activation="selu", n_layers=n_layers, n_neurons=n_neurons)
 
 # Callbacks
 # Early Stopping if validation loss doesn't change within specified number of epochs
-es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=200)
+es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60)
 
 # Store model parameters
 model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")

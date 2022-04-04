@@ -8,6 +8,7 @@ from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
+# todo: filter out negative transpiration and nightime values BEFORE resampling to daily!!!
 
 def load_tabular(path: str, freq: str) -> dict:
     """
