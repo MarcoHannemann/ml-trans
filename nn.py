@@ -1,6 +1,5 @@
 import os
 import glob
-from pickle import load
 from datetime import datetime
 
 import numpy as np
@@ -11,6 +10,10 @@ import tensorflow as tf
 import load_model_data
 import plotting
 
+# global to-do list
+# todo: Involve flags in SAPFLUXNET data
+# todo: Full extraction of FPAR for SFN and FLX
+# todo: Involve more SFN sites e.g. other PFTs
 
 def predictions_to_dataframe(y_true, y_pred):
     """Helper function that builds data frame out of two arrays.

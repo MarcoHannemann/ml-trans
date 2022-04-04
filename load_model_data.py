@@ -8,7 +8,7 @@ from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
-# todo: filter out negative transpiration and nightime values BEFORE resampling to daily!!!
+# todo: filter out negative transpiration and nightime values
 
 def load_tabular(path: str, freq: str) -> dict:
     """
@@ -31,7 +31,12 @@ def load_tabular(path: str, freq: str) -> dict:
             print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP.")
             del data[sitename]
             continue
+        data[sitename].loc[(data[sitename]['vpd'] < 0)] = np.nan
+        data[sitename].loc[(data[sitename]['transpiration'] < 0)] = np.nan
+        data[sitename].loc[(data[sitename]['ssr'] < 50)] = np.nan
+        data[sitename].dropna(how="any", inplace=True)
         data[sitename] = data[sitename].resample(freq).mean()
+        data[sitename].dropna(how="any", inplace=True)
         data[sitename]["IGBP"] = igbp
         # drop all feature columns not specified in features
     #    if features is not None:
@@ -110,13 +115,15 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     :param features: List of feature names incoroporated in model
     :return: dictionary containing transformed training data
     """
+
+    # divide input features based on scale (interval, nominal)
     cat_attributes = ["IGBP"]
     features.remove("IGBP")
     num_attributes = features
 
     # Pipeline for scaling and encoding. Scaling is performed after train_test_split to avoid data leakage.
-    # We use OneHotEncoder() for the categorical feature PFT, since we want to avoid any ranking in PFTs.
-    # Instead of PFT = {1..n}, we end up with one feature for each PFT set to 0 or 1.
+    # We use OneHotEncoder() for the categorical feature PFT, since we want to avoid any ranking in Land Cover Classes.
+    # Instead of IGBP = {1..n}, we end up with one feature for each IGBP class set to 0 or 1.
 
     num_pipeline = Pipeline([
         ('minmax_scaler', StandardScaler())
@@ -126,12 +133,14 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
         ('cat', OneHotEncoder(), cat_attributes)
     ])
 
+    # apply pipeline, fit only to training data
     df_train = full_pipeline.fit_transform(x_train)
     df_test = full_pipeline.transform(x_test)
     df_val = full_pipeline.transform(x_val)
 
-    # Extract new feature names from OneHotEncoder().categories_ ('PFT' -> ['DBF, 'EBF', ...])
+    # Extract new feature names from OneHotEncoder().categories_ ('IGBP' -> ['DBF, 'EBF', ...])
     new_categories = full_pipeline.transformers_[1][1].categories_[0].tolist()
+
     # convert numpy array back to data frame
     df_train = pd.DataFrame(df_train, columns=num_attributes + new_categories)
     df_train.columns = df_train.columns.map(''.join)
@@ -140,6 +149,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     df_val = pd.DataFrame(df_val, columns=num_attributes + new_categories)
     df_val.columns = df_val.columns.map(''.join)
 
+    # write out transformed data to CSV for analysis purpose (not used in neural network)
     df_train.to_csv('output/training/train_samples.csv', index=False)
     df_test.to_csv('output/training/test_samples.csv', index=False)
     df_val.to_csv('output/training/val_samples.csv', index=False)
@@ -162,6 +172,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
 
 
 def load_external(path: str) -> dict:
+    """Loads tabular data for prediction outside of training. Files must contain all variables involved in training."""
     csv_files = sorted(glob.glob(f"{path}/*.csv"))
     ext_data = {}
     for csv_file in csv_files:
@@ -173,6 +184,7 @@ def load_external(path: str) -> dict:
             print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP.")
             del ext_data[sitename]
             continue
+        # todo: No preprocessing done before resampling (e.g. filter invalid data)
         ext_data[sitename] = ext_data[sitename].resample("1D").mean()
         ext_data[sitename]["IGBP"] = igbp
     filtered_data = {}
@@ -195,23 +207,31 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, external_pre
     :param blacklist: If True, sites specified in metadata are removed
     :return train_data: Dictionary with preprocessed training data
     """
+
+    # load tabular point data
     sfn_data = load_tabular(path_csv, freq=freq)
+
+    # filter out time series shorter than 1 year so site covers at least one full seasonal cycle
     sfn_data = filter_short_timeseries(sfn_data)
+
+    # optional: Read a "blacklist" to exclude sites from training
     if blacklist:
         blacklist = pd.read_csv('../sfn_ann/metadata/site_selection.csv', index_col='si_code')
         blacklist = list(blacklist.loc[blacklist['exclude'] == 0].index)
-
-        forbidden_sites = []
-        for site in sfn_data.keys():
-            if site in blacklist:
-                forbidden_sites.append(site)
+        forbidden_sites = [site for site in sfn_data.keys() if site in blacklist]
         for site in forbidden_sites:
             del sfn_data[site]
 
+    # Convert dictionary of sites to single dataframe. Geographic information will be lost from here.
     sfn_data = dict_to_df(sfn_data)
+
+    # Filter out data (e.g. T < 0 mm, net radiation < 50 W/m2)
     sfn_data = filter_data(sfn_data)
+
+    # Shuffle data randomly and split into training, testing, validation. Temporal information will be lost from here.
     x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data)
 
+    # Scale and encode data for neural network
     train_data = transform_data(x_train, x_test, x_val, y_train, y_test, y_val,
                                 features, ext_prediction=external_prediction)
     return train_data
