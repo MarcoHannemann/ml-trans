@@ -49,9 +49,9 @@ def scatter_density_plot(df_train, df_test, df_val, title, upper_lim=10):
     ax[2].set_ylim(0, upper_lim)
     ax[2].set_xlim(0, upper_lim)
 
-    m1, b1, _, _, _ = linregress(df_train["y_pred"], df_train["y_true"])
-    m2, b2, _, _, _ = linregress(df_test["y_pred"], df_test["y_true"])
-    m3, b3, _, _, _ = linregress(df_val["y_pred"], df_val["y_true"])
+    m1, b1, _, _, _ = linregress(df_train["y_true"], df_train["y_pred"])
+    m2, b2, _, _, _ = linregress(df_test["y_true"], df_test["y_pred"])
+    m3, b3, _, _, _ = linregress(df_val["y_true"], df_val["y_pred"])
     x = np.linspace(0, upper_lim, 1000)
     y1 = m1 * x + b1
     y2 = m2 * x + b2
