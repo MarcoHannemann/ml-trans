@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 
 # todo: filter out negative transpiration and nightime values
 
-def load_tabular(path: str, freq: str) -> dict:
+def load_tabular(path: str, features: list, freq: str) -> dict:
     """
     Loads comma seperates value files containing time series for a single location into a data dictionary.
 
@@ -41,7 +41,11 @@ def load_tabular(path: str, freq: str) -> dict:
         # drop all feature columns not specified in features
     #    if features is not None:
     #        data[sitename] = data[sitename].drop(columns= data[sitename].columns.difference(features))
-    return data
+    data_new = {}
+    for sitename, df in data.items():
+        if isfeature(df, features):
+            data_new[sitename] = df
+    return data_new
 
 
 def filter_short_timeseries(data: dict, length=365) -> dict:
@@ -84,6 +88,13 @@ def filter_data(data: pd.DataFrame) -> pd.DataFrame:
 def drop_features(features):
     """Drop features if specified."""
     pass
+
+
+def isfeature(df, features):
+    for feature in features:
+        if feature not in df.columns:
+            return False
+    return True
 
 
 def split_data(data: pd.DataFrame, random_state=42) -> tuple:
@@ -209,7 +220,7 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, external_pre
     """
 
     # load tabular point data
-    sfn_data = load_tabular(path_csv, freq=freq)
+    sfn_data = load_tabular(path_csv, features, freq=freq)
 
     # filter out time series shorter than 1 year so site covers at least one full seasonal cycle
     sfn_data = filter_short_timeseries(sfn_data)
@@ -224,7 +235,6 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, external_pre
 
     # Convert dictionary of sites to single dataframe. Geographic information will be lost from here.
     sfn_data = dict_to_df(sfn_data)
-
     # Filter out data (e.g. T < 0 mm, net radiation < 50 W/m2)
     sfn_data = filter_data(sfn_data)
 

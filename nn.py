@@ -127,7 +127,7 @@ model = create_model(inp_shape=input_shape, activation="selu", n_layers=n_layers
 
 # Callbacks
 # Early Stopping if validation loss doesn't change within specified number of epochs
-es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60)
+es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=200)
 
 # Store model parameters
 model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")
