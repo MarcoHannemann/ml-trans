@@ -80,7 +80,7 @@ def filter_data(data: pd.DataFrame) -> pd.DataFrame:
     :return: data: training data
     """
     data = data.loc[data["vpd"] > 0]
-    data = data.loc[data["ssr"] > 50]
+    data = data.loc[data["ssr"] > 0]
     data = data.loc[data["transpiration"] > 0]
     return data.reset_index(drop=True)
 
@@ -97,14 +97,14 @@ def isfeature(df, features):
     return True
 
 
-def split_data(data: pd.DataFrame, random_state=42) -> tuple:
+def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> tuple:
     """Splits the data into training, testing, validation using sklearn.
 
     :param data: DataFrame containing whole dataset
     :param random_state: Used to make model reproducable
     :return: tuple containg train, test, val data for input x and target y
     """
-    x_train, x_test, y_train, y_test = train_test_split(data.drop(columns='transpiration'), data['transpiration'],
+    x_train, x_test, y_train, y_test = train_test_split(data.drop(columns=target), data[target],
                                                         test_size=0.36, random_state=random_state)
     x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.66, random_state=random_state)
 

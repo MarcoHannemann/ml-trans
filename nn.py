@@ -61,7 +61,7 @@ def create_model(inp_shape=11, activation='relu', n_layers=2, n_neurons=32):
     model.add(tf.keras.Input(shape=(inp_shape,)))
     for i in range(0, n_layers):
         model.add(tf.keras.layers.Dense(n_neurons, activation=activation))
-
+        model.add(tf.keras.layers.Dropout(0.2))
     model.add(tf.keras.layers.Dense(1))
     model.compile(loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"])
     return model
@@ -118,7 +118,7 @@ ext_path = None
 
 # load data and set model options
 features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", "fpar"]
-train_data = load_model_data.load(path_csv="data/sfn/", freq="1D", features=features,
+train_data = load_model_data.load(path_csv="data/sfn_hpurly/", freq="1H", features=features,
                                   blacklist=True, external_prediction=ext_path)
 n_layers = 5
 n_neurons = 256
@@ -137,7 +137,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  verbose=1)
 
 # retrain model
-model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=10000, batch_size=1000, callbacks=[es_callback, cp_callback],
+model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=10000, batch_size=250, callbacks=[es_callback, cp_callback],
           validation_data=(train_data["Xtest"], train_data["Ytest"]))
 # todo: load pretrained model
 # checkpoint_path = "??"
