@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 
 # todo: filter out negative transpiration and nightime values
 
-def load_tabular(path: str, features: list, freq: str) -> dict:
+def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     """
     Loads comma seperates value files containing time series for a single location into a data dictionary.
 
@@ -28,19 +28,17 @@ def load_tabular(path: str, features: list, freq: str) -> dict:
         try:
             igbp = data[sitename]["IGBP"].iloc[0]
         except IndexError:
-            print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP.")
+            print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP or canopy height.")
             del data[sitename]
             continue
         data[sitename].loc[(data[sitename]['vpd'] < 0)] = np.nan
-        data[sitename].loc[(data[sitename]['transpiration'] < 0)] = np.nan
-        data[sitename].loc[(data[sitename]['ssr'] < 50)] = np.nan
+        data[sitename].loc[(data[sitename][target] < 0)] = np.nan
+        data[sitename].loc[(data[sitename]['ssr'] < 0)] = np.nan
         data[sitename].dropna(how="any", inplace=True)
         data[sitename] = data[sitename].resample(freq).mean()
         data[sitename].dropna(how="any", inplace=True)
         data[sitename]["IGBP"] = igbp
-        # drop all feature columns not specified in features
-    #    if features is not None:
-    #        data[sitename] = data[sitename].drop(columns= data[sitename].columns.difference(features))
+
     data_new = {}
     for sitename, df in data.items():
         if isfeature(df, features):
@@ -80,8 +78,8 @@ def filter_data(data: pd.DataFrame) -> pd.DataFrame:
     :return: data: training data
     """
     data = data.loc[data["vpd"] > 0]
-    data = data.loc[data["ssr"] > 0]
-    data = data.loc[data["transpiration"] > 0]
+    data = data.loc[data["ssr"] > 50]
+    data = data.loc[data["tr"] > 0.01]
     return data.reset_index(drop=True)
 
 
@@ -97,7 +95,7 @@ def isfeature(df, features):
     return True
 
 
-def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> tuple:
+def split_data(data: pd.DataFrame, target="transpiration", random_state=5) -> tuple:
     """Splits the data into training, testing, validation using sklearn.
 
     :param data: DataFrame containing whole dataset
@@ -105,8 +103,9 @@ def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> t
     :return: tuple containg train, test, val data for input x and target y
     """
     x_train, x_test, y_train, y_test = train_test_split(data.drop(columns=target), data[target],
-                                                        test_size=0.36, random_state=random_state)
-    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.66, random_state=random_state)
+                                                        train_size=0.8, random_state=random_state)
+    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.5, random_state=random_state)
+
 
     return x_train, x_test, x_val, y_train, y_test, y_val
 
@@ -174,7 +173,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
         ext_data = load_external(ext_prediction)
         for sitename, df in ext_data.items():
             df_transformed = df.reset_index(drop=True)
-            df_transformed = pd.DataFrame(full_pipeline.transform(df), columns=num_attributes + new_categories)
+            df_transformed = pd.DataFrame(full_pipeline.transform(df_transformed), columns=num_attributes + new_categories)
             df_transformed.to_csv(f"output/fluxnet/{sitename}.csv", index=False)
 
     return {"Xtrain": np.array(df_train), "Ytrain": np.expand_dims(np.array(y_train), axis=1),
@@ -207,7 +206,7 @@ def load_external(path: str) -> dict:
     return filtered_data
 
 
-def load(path_csv: str, freq: str, features: list, blacklist=False, external_prediction: str = None) -> dict:
+def load(path_csv: str, freq: str, features: list, blacklist=False, target="transpiration", external_prediction: str = None) -> tuple:
     """Loads the data from passed path and does preprocessing for the neural network. Should be called from external
     script.
 
@@ -216,32 +215,40 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, external_pre
     :param freq: Temporal resolution. Currently only "1D" supported
     :param features: List with input variables to be used
     :param blacklist: If True, sites specified in metadata are removed
+    :param target: Name of target variable
     :return train_data: Dictionary with preprocessed training data
     """
-
+    keys = ["site_info", "setup", "model", "results"]
+    metadata = {key:{} for key in keys}
     # load tabular point data
-    sfn_data = load_tabular(path_csv, features, freq=freq)
+    sfn_data = load_tabular(path_csv, features, target=target, freq=freq)
 
     # filter out time series shorter than 1 year so site covers at least one full seasonal cycle
-    sfn_data = filter_short_timeseries(sfn_data)
+    #sfn_data = filter_short_timeseries(sfn_data)
 
-    # optional: Read a "blacklist" to exclude sites from training
+    # optional: Read a "blacklist/whitelist" to exclude sites from training
     if blacklist:
-        blacklist = pd.read_csv('../sfn_ann/metadata/site_selection.csv', index_col='si_code')
+        blacklist = pd.read_csv(blacklist, index_col='si_code')
         blacklist = list(blacklist.loc[blacklist['exclude'] == 0].index)
         forbidden_sites = [site for site in sfn_data.keys() if site in blacklist]
         for site in forbidden_sites:
             del sfn_data[site]
+    metadata["site_info"]["n_sites"] = len(sfn_data)
+    metadata["site_info"]["sitenames"] = list(sfn_data.keys())
+    #metadata["site_info"]["ecosystems"] =
+    metadata["setup"]["frequency"] = freq
+    metadata["setup"]["target"] = target
+    metadata["setup"]["features"] = features
 
     # Convert dictionary of sites to single dataframe. Geographic information will be lost from here.
     sfn_data = dict_to_df(sfn_data)
     # Filter out data (e.g. T < 0 mm, net radiation < 50 W/m2)
-    sfn_data = filter_data(sfn_data)
+    #sfn_data = filter_data(sfn_data)
 
     # Shuffle data randomly and split into training, testing, validation. Temporal information will be lost from here.
-    x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data)
+    x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data, target=target)
 
     # Scale and encode data for neural network
     train_data = transform_data(x_train, x_test, x_val, y_train, y_test, y_val,
                                 features, ext_prediction=external_prediction)
-    return train_data
+    return train_data, metadata

@@ -1,6 +1,7 @@
 import os
 import glob
 from datetime import datetime
+import json
 
 import numpy as np
 import pandas as pd
@@ -9,11 +10,13 @@ import tensorflow as tf
 
 import load_model_data
 import plotting
+import metrics
 
 # global to-do list
 # todo: Involve flags in SAPFLUXNET data
 # todo: Full extraction of FPAR for SFN and FLX
 # todo: Involve more SFN sites e.g. other PFTs
+
 
 def predictions_to_dataframe(y_true, y_pred):
     """Helper function that builds data frame out of two arrays.
@@ -23,29 +26,8 @@ def predictions_to_dataframe(y_true, y_pred):
     :return: pandas data frame without NaN data
     """
     df = pd.DataFrame(np.concatenate((y_true, y_pred), axis=1), columns=["y_true", "y_pred"])
-    #df = pd.DataFrame(np.concatenate((y_true, y_pred), axis=1), columns=["y_true", "y_pred"])
     df = df.dropna(axis=0, how='any')
     return df
-
-
-def load_training_data():
-    """Reads train/test/validation data for training the neural network and converts the data to arrays.
-
-    :return: Dictionary with the 3 input feature (X) and 3 prediction target (Y) arrays
-    """
-    X_train = np.array(pd.read_csv('../sfn_ann/output/ann/train_samples.csv'))
-    Y_train = np.array(pd.read_csv('../sfn_ann/output/ann/train_lables.csv'))
-
-    X_test = np.array(pd.read_csv('../sfn_ann/output/ann/test_samples.csv'))
-    Y_test = np.array(pd.read_csv('../sfn_ann/output/ann/test_lables.csv'))
-
-    X_val = np.array(pd.read_csv('../sfn_ann/output/ann/val_samples.csv'))
-    Y_val = np.array(pd.read_csv('../sfn_ann/output/ann/val_lables.csv'))
-
-    training_data = {"Xtrain": X_train, "Ytrain": Y_train,
-                     "Xtest": X_test, "Ytest": Y_test,
-                     "Xval": X_val, "Yval": Y_val}
-    return training_data
 
 
 def create_model(inp_shape=11, activation='relu', n_layers=2, n_neurons=32):
@@ -61,7 +43,7 @@ def create_model(inp_shape=11, activation='relu', n_layers=2, n_neurons=32):
     model.add(tf.keras.Input(shape=(inp_shape,)))
     for i in range(0, n_layers):
         model.add(tf.keras.layers.Dense(n_neurons, activation=activation))
-        model.add(tf.keras.layers.Dropout(0.2))
+        model.add(tf.keras.layers.Dropout(0.3))
     model.add(tf.keras.layers.Dense(1))
     model.compile(loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"])
     return model
@@ -117,13 +99,19 @@ ext_path = "data/fluxnet"
 ext_path = None
 
 # load data and set model options
-features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", "fpar"]
-train_data = load_model_data.load(path_csv="data/sfn_hpurly/", freq="1H", features=features,
-                                  blacklist=True, external_prediction=ext_path)
+features = ["t2m", "ssr", "sm", "vpd", "ws", "IGBP", "height",]
+upper_lim = 10
+
+
 n_layers = 5
-n_neurons = 256
+n_neurons = 128
+act_fn = "relu"
+
+# load model data and create tf model
+train_data, metadata = load_model_data.load(path_csv="data/sfn_daily/", freq="1D", features=features,
+                                  blacklist="site_selection_orig.csv", target="tr", external_prediction=ext_path)
 input_shape = train_data["Xtrain"].shape[1]
-model = create_model(inp_shape=input_shape, activation="selu", n_layers=n_layers, n_neurons=n_neurons)
+model = create_model(inp_shape=input_shape, activation=act_fn, n_layers=n_layers, n_neurons=n_neurons)
 
 # Callbacks
 # Early Stopping if validation loss doesn't change within specified number of epochs
@@ -136,8 +124,8 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True,
                                                  verbose=1)
 
-# retrain model
-model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=10000, batch_size=250, callbacks=[es_callback, cp_callback],
+# train model
+model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=5000, batch_size=250, callbacks=[es_callback, cp_callback],
           validation_data=(train_data["Xtest"], train_data["Ytest"]))
 # todo: load pretrained model
 # checkpoint_path = "??"
@@ -149,7 +137,34 @@ df_test = predict(model, train_data["Xtest"], train_data["Ytest"])
 df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
 # visualize model results in a scatter plot for training, testing, validation
-plotting.scatter_density_plot(df_train, df_test, df_val, title=f"{n_layers} Layers, {n_neurons} Neurons")
+plotting.scatter_density_plot(df_train, df_test, df_val, title=f"{n_layers} Layers, {n_neurons} Neurons", density=False,
+                              upper_lim=upper_lim)
+
+
+# write metadata to JSON
+metadata["model"]["layers"] = n_layers
+metadata["model"]["neurons"] = n_neurons
+metadata["model"]["activation"] = act_fn
+
+_, m1, b1 = metrics.linear_fit(df_train["y_true"], df_train["y_pred"], upper_lim=upper_lim)
+metadata["results"]["training"] = {"MAE": metrics.mae(df_train["y_true"], df_train["y_pred"]),
+                                   "corr": metrics.r2(df_train["y_true"], df_train["y_pred"]),
+                                   "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'"}
+
+_, m2, b12 = metrics.linear_fit(df_test["y_true"], df_test["y_pred"], upper_lim=upper_lim)
+metadata["results"]["testing"] = {"MAE": metrics.mae(df_test["y_true"], df_test["y_pred"]),
+                                   "corr": metrics.r2(df_test["y_true"], df_test["y_pred"]),
+                                   "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'"}
+
+_, m3, b3 = metrics.linear_fit(df_val["y_true"], df_val["y_pred"], upper_lim=upper_lim)
+metadata["results"]["validation"] = {"MAE": metrics.mae(df_val["y_true"], df_val["y_pred"]),
+                                   "corr": metrics.r2(df_val["y_true"], df_val["y_pred"]),
+                                   "fit": f"y = {round(m3, 2)}x + {round(b3, 2)}'"}
+
+metadata["results"]["cpk_path"] = f"checkpoint/{model_time}/"
+
+with open(f"models/{model_time}.json", "w") as fp:
+    json.dump(metadata, fp)
 
 # Use model to predict T at FLUXNET sites
 if ext_path:
