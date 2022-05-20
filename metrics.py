@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.metrics import mean_absolute_error, r2_score
 from scipy.stats import linregress
 
+
 def mae(y_true, y_pred):
     return round(mean_absolute_error(y_true, y_pred), 2)
 

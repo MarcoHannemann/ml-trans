@@ -12,6 +12,7 @@ import load_model_data
 import plotting
 import metrics
 
+
 # global to-do list
 # todo: Involve flags in SAPFLUXNET data
 # todo: Full extraction of FPAR for SFN and FLX
@@ -43,7 +44,7 @@ def create_model(inp_shape=11, activation='relu', n_layers=2, n_neurons=32):
     model.add(tf.keras.Input(shape=(inp_shape,)))
     for i in range(0, n_layers):
         model.add(tf.keras.layers.Dense(n_neurons, activation=activation))
-        model.add(tf.keras.layers.Dropout(0.3))
+        #model.add(tf.keras.layers.Dropout(0.3))
     model.add(tf.keras.layers.Dense(1))
     model.compile(loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"])
     return model
@@ -95,27 +96,27 @@ def predict_fluxnet(model):
         plt.clf()
     predictions_all_stations.to_csv('output/fluxnet_predictions/flx_predictions.csv')
 
+
 ext_path = "data/fluxnet"
-ext_path = None
+#ext_path = None
 
 # load data and set model options
-features = ["t2m", "ssr", "sm", "vpd", "ws", "IGBP", "height",]
+features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", ]
 upper_lim = 10
 
-
 n_layers = 5
-n_neurons = 128
-act_fn = "relu"
+n_neurons = 256
+act_fn = "selu"
 
-# load model data and create tf model
+# load model data and create sequential model
 train_data, metadata = load_model_data.load(path_csv="data/sfn_daily/", freq="1D", features=features,
-                                  blacklist="site_selection_orig.csv", target="tr", external_prediction=ext_path)
+                                            blacklist="whitelist.csv", target="transpiration", external_prediction=ext_path)
 input_shape = train_data["Xtrain"].shape[1]
 model = create_model(inp_shape=input_shape, activation=act_fn, n_layers=n_layers, n_neurons=n_neurons)
 
 # Callbacks
 # Early Stopping if validation loss doesn't change within specified number of epochs
-es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=200)
+es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=500)
 
 # Store model parameters
 model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")
@@ -125,7 +126,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  verbose=1)
 
 # train model
-model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=5000, batch_size=250, callbacks=[es_callback, cp_callback],
+model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=5000, batch_size=500, callbacks=[es_callback, cp_callback],
           validation_data=(train_data["Xtest"], train_data["Ytest"]))
 # todo: load pretrained model
 # checkpoint_path = "??"
@@ -137,9 +138,8 @@ df_test = predict(model, train_data["Xtest"], train_data["Ytest"])
 df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
 # visualize model results in a scatter plot for training, testing, validation
-plotting.scatter_density_plot(df_train, df_test, df_val, title=f"{n_layers} Layers, {n_neurons} Neurons", density=False,
+plotting.scatter_density_plot(df_train, df_test, df_val, title=f"{n_layers} Layers, {n_neurons} Neurons", density=True,
                               upper_lim=upper_lim)
-
 
 # write metadata to JSON
 metadata["model"]["layers"] = n_layers
@@ -153,18 +153,18 @@ metadata["results"]["training"] = {"MAE": metrics.mae(df_train["y_true"], df_tra
 
 _, m2, b12 = metrics.linear_fit(df_test["y_true"], df_test["y_pred"], upper_lim=upper_lim)
 metadata["results"]["testing"] = {"MAE": metrics.mae(df_test["y_true"], df_test["y_pred"]),
-                                   "corr": metrics.r2(df_test["y_true"], df_test["y_pred"]),
-                                   "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'"}
+                                  "corr": metrics.r2(df_test["y_true"], df_test["y_pred"]),
+                                  "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'"}
 
 _, m3, b3 = metrics.linear_fit(df_val["y_true"], df_val["y_pred"], upper_lim=upper_lim)
 metadata["results"]["validation"] = {"MAE": metrics.mae(df_val["y_true"], df_val["y_pred"]),
-                                   "corr": metrics.r2(df_val["y_true"], df_val["y_pred"]),
-                                   "fit": f"y = {round(m3, 2)}x + {round(b3, 2)}'"}
+                                     "corr": metrics.r2(df_val["y_true"], df_val["y_pred"]),
+                                     "fit": f"y = {round(m3, 2)}x + {round(b3, 2)}'"}
 
 metadata["results"]["cpk_path"] = f"checkpoint/{model_time}/"
 
 with open(f"models/{model_time}.json", "w") as fp:
-    json.dump(metadata, fp)
+    json.dump(metadata, fp, indent=1)
 
 # Use model to predict T at FLUXNET sites
 if ext_path:

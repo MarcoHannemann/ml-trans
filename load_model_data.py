@@ -10,11 +10,14 @@ from sklearn.pipeline import Pipeline
 
 # todo: filter out negative transpiration and nightime values
 
+
 def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     """
     Loads comma seperates value files containing time series for a single location into a data dictionary.
 
     :param path: point location CSV directory
+    :param features: list of input features
+    :param target: name of target variable
     :param freq: Temporal resolution. Currently only "1D" supported
     :return: data: data dictionary with structure {basename: pd.DataFrame}
     """
@@ -28,12 +31,14 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
         try:
             igbp = data[sitename]["IGBP"].iloc[0]
         except IndexError:
-            print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP or canopy height.")
+            print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP/canopy height.")
             del data[sitename]
             continue
         data[sitename].loc[(data[sitename]['vpd'] < 0)] = np.nan
         data[sitename].loc[(data[sitename][target] < 0)] = np.nan
         data[sitename].loc[(data[sitename]['ssr'] < 0)] = np.nan
+        if "tr_ca" in list(data[sitename].columns):
+            data[sitename].drop(columns=["tr_ca"], inplace=True)
         data[sitename].dropna(how="any", inplace=True)
         data[sitename] = data[sitename].resample(freq).mean()
         data[sitename].dropna(how="any", inplace=True)
@@ -95,17 +100,18 @@ def isfeature(df, features):
     return True
 
 
-def split_data(data: pd.DataFrame, target="transpiration", random_state=5) -> tuple:
+def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> tuple:
     """Splits the data into training, testing, validation using sklearn.
 
+
     :param data: DataFrame containing whole dataset
+    :param target: name of target variable
     :param random_state: Used to make model reproducable
     :return: tuple containg train, test, val data for input x and target y
     """
     x_train, x_test, y_train, y_test = train_test_split(data.drop(columns=target), data[target],
-                                                        train_size=0.8, random_state=random_state)
-    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.5, random_state=random_state)
-
+                                                        train_size=0.7,)
+    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.66, random_state=random_state)
 
     return x_train, x_test, x_val, y_train, y_test, y_val
 
@@ -227,15 +233,16 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, target="tran
     #sfn_data = filter_short_timeseries(sfn_data)
 
     # optional: Read a "blacklist/whitelist" to exclude sites from training
-    if blacklist:
-        blacklist = pd.read_csv(blacklist, index_col='si_code')
-        blacklist = list(blacklist.loc[blacklist['exclude'] == 0].index)
-        forbidden_sites = [site for site in sfn_data.keys() if site in blacklist]
+    if isinstance(blacklist, str):
+        site_selection = pd.read_csv(blacklist, index_col='si_code')
+        site_selection = list(site_selection.loc[site_selection['exclude'] == 0].index)
+        forbidden_sites = [site for site in sfn_data.keys() if site in site_selection]
         for site in forbidden_sites:
             del sfn_data[site]
     metadata["site_info"]["n_sites"] = len(sfn_data)
-    metadata["site_info"]["sitenames"] = list(sfn_data.keys())
-    #metadata["site_info"]["ecosystems"] =
+    metadata["site_info"]["sitenames"] = sorted(list(sfn_data.keys()))
+    #metadata["site_info"]["ecosystems"] = [arr.item() for arr in np.unique(([data["IGBP"].unique()
+    #                                                                        for data in sfn_data.values()]))]
     metadata["setup"]["frequency"] = freq
     metadata["setup"]["target"] = target
     metadata["setup"]["features"] = features
