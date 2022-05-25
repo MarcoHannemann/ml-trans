@@ -2,7 +2,7 @@ import os
 import glob
 from datetime import datetime
 import json
-
+from typing import Union
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,7 +17,11 @@ import metrics
 # todo: Involve flags in SAPFLUXNET data
 # todo: Full extraction of FPAR for SFN and FLX
 # todo: Involve more SFN sites e.g. other PFTs
-
+# todo: involve SWVL2?
+#  For example, Zeppel et al. (2008) reported that the transpira-
+#  tion of Australian woodland was independent of the water content of
+#  the top 80 cm of the soil profile, instead, water uptake has occurred
+#  from depths of up to 3 m.
 
 def predictions_to_dataframe(y_true, y_pred):
     """Helper function that builds data frame out of two arrays.
@@ -31,20 +35,23 @@ def predictions_to_dataframe(y_true, y_pred):
     return df
 
 
-def create_model(inp_shape=11, activation='relu', n_layers=2, n_neurons=32):
+def create_model(inp_shape: int = 11, activation: str = 'relu', n_layers: int = 2, n_neurons: int = 32,
+                 dropout: Union[bool, float] = False) -> tf.keras.Model():
     """Creates a sequential model with tf.keras for regression problems.
 
     :param inp_shape: Input shape of the input feature data. Equal to number of dataframe columns
     :param activation: Type of activation function
     :param n_layers: Number of hidden layers to be generated
     :param n_neurons: Numer of neurons each hidden layer cotains
+    :param dropout: False or dropout rate
     :return: Compiled model ready to be fitted to training data
     """
     model = tf.keras.Sequential()
     model.add(tf.keras.Input(shape=(inp_shape,)))
     for i in range(0, n_layers):
         model.add(tf.keras.layers.Dense(n_neurons, activation=activation))
-        #model.add(tf.keras.layers.Dropout(0.3))
+        if dropout:
+            model.add(tf.keras.layers.Dropout(dropout))
     model.add(tf.keras.layers.Dense(1))
     model.compile(loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"])
     return model
@@ -98,25 +105,30 @@ def predict_fluxnet(model):
 
 
 ext_path = "data/fluxnet"
-#ext_path = None
+ext_path = None
 
 # load data and set model options
-features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", ]
+features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
 upper_lim = 10
 
 n_layers = 5
 n_neurons = 256
+dropout_rate = 0.1
 act_fn = "selu"
 
 # load model data and create sequential model
-train_data, metadata = load_model_data.load(path_csv="data/sfn_daily/", freq="1D", features=features,
+train_data, metadata = load_model_data.load(path_csv="data/sfn_lai/", freq="1D", features=features,
                                             blacklist="whitelist.csv", target="transpiration", external_prediction=ext_path)
 input_shape = train_data["Xtrain"].shape[1]
-model = create_model(inp_shape=input_shape, activation=act_fn, n_layers=n_layers, n_neurons=n_neurons)
+model = create_model(inp_shape=input_shape,
+                     activation=act_fn,
+                     n_layers=n_layers,
+                     n_neurons=n_neurons,
+                     dropout=dropout_rate)
 
 # Callbacks
 # Early Stopping if validation loss doesn't change within specified number of epochs
-es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=500)
+es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=200)
 
 # Store model parameters
 model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")
@@ -131,6 +143,7 @@ model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=5000, batch_size=50
 # todo: load pretrained model
 # checkpoint_path = "??"
 # model.load_weights(checkpoint_path)
+model.save(f"models/{model_time}")
 
 # apply trained model on training data
 df_train = predict(model, train_data["Xtrain"], train_data["Ytrain"])
@@ -138,7 +151,9 @@ df_test = predict(model, train_data["Xtest"], train_data["Ytest"])
 df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
 # visualize model results in a scatter plot for training, testing, validation
-plotting.scatter_density_plot(df_train, df_test, df_val, title=f"{n_layers} Layers, {n_neurons} Neurons", density=True,
+plotting.scatter_density_plot(df_train, df_test, df_val, title=f"{n_layers} Layers, {n_neurons} Neurons, "
+                                                               f"Dropout: {dropout}",
+                              density=True,
                               upper_lim=upper_lim)
 
 # write metadata to JSON

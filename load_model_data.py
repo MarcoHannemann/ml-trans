@@ -94,6 +94,7 @@ def drop_features(features):
 
 
 def isfeature(df, features):
+    """Check if specified features are available in data."""
     for feature in features:
         if feature not in df.columns:
             return False
@@ -101,7 +102,7 @@ def isfeature(df, features):
 
 
 def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> tuple:
-    """Splits the data into training, testing, validation using sklearn.
+    """Splits the data into training, testing, validation.
 
 
     :param data: DataFrame containing whole dataset
@@ -118,10 +119,10 @@ def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> t
 
 def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
                    y_train: np.array, y_test: np.array, y_val: np.array,
-                   features: list, ext_prediction: str = None) -> dict:
-    """Transforms and fits data to satisfy requirements of neural network. Includes normalization and encoding.
+                   features: list, ext_prediction: str = None, freq: str = "1D") -> dict:
+    """Transforms and fits data. Includes normalization and encoding.
 
-    :param ext_prediction: If path is specified, external locations are transformed for predictio
+    :param ext_prediction: If path is specified, external locations are transformed for predictions
     :param x_train: Training input data
     :param x_test: Testing input data
     :param x_val: Validation input data
@@ -129,6 +130,8 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     :param y_test: Testing target
     :param y_val: Validation target
     :param features: List of feature names incoroporated in model
+    :param ext_prediction: Path to directory with external sites (CSV)
+    :param freq: Temporal resolution 1D | 1H
     :return: dictionary containing transformed training data
     """
 
@@ -176,7 +179,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
 
     # if external prediction is activated, external input features are transformed here
     if ext_prediction is not None:
-        ext_data = load_external(ext_prediction)
+        ext_data = load_external(ext_prediction, freq=freq)
         for sitename, df in ext_data.items():
             df_transformed = df.reset_index(drop=True)
             df_transformed = pd.DataFrame(full_pipeline.transform(df_transformed), columns=num_attributes + new_categories)
@@ -187,7 +190,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
             "Xval": np.array(df_val), "Yval": np.expand_dims(np.array(y_val), axis=1)}
 
 
-def load_external(path: str) -> dict:
+def load_external(path: str, freq: str = "1D") -> dict:
     """Loads tabular data for prediction outside of training. Files must contain all variables involved in training."""
     csv_files = sorted(glob.glob(f"{path}/*.csv"))
     ext_data = {}
@@ -201,7 +204,7 @@ def load_external(path: str) -> dict:
             del ext_data[sitename]
             continue
         # todo: No preprocessing done before resampling (e.g. filter invalid data)
-        ext_data[sitename] = ext_data[sitename].resample("1D").mean()
+        ext_data[sitename] = ext_data[sitename].resample(freq).mean()
         ext_data[sitename]["IGBP"] = igbp
     filtered_data = {}
     for sitename, df in ext_data.items():
@@ -257,5 +260,5 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, target="tran
 
     # Scale and encode data for neural network
     train_data = transform_data(x_train, x_test, x_val, y_train, y_test, y_val,
-                                features, ext_prediction=external_prediction)
+                                features, ext_prediction=external_prediction, freq=freq)
     return train_data, metadata
