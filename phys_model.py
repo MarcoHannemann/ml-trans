@@ -3,8 +3,6 @@ import pandas as pd
 
 import constants
 
-# todo: Scaling factor for LAI still implemented in Ac calculation!
-
 
 def to_radiant(lat):
     """converts latitude in decimal degrees to radiants."""
@@ -18,9 +16,9 @@ def get_solar_declination(day_of_year):
 
 def get_hour_angle(time):
     """Calculates the sun hour angle based on day time."""
-    hourangle = pd.Series(data=time.hour, index=time)*15
-    hourangle = hourangle.where(hourangle >= 0, hourangle+360)
-    hourangle = hourangle.where(hourangle < 360, hourangle-360)
+    hourangle = pd.Series(data=time.hour, index=time) * 15
+    hourangle = hourangle.where(hourangle >= 0, hourangle + 360)
+    hourangle = hourangle.where(hourangle < 360, hourangle - 360)
     return hourangle
 
 
@@ -68,17 +66,31 @@ def canopy_available_energy(netrad, LAI, SZA):
     return Ac
 
 
+def net_radiation_canopy(netrad, LAI, SZA):
+    """Calculates the net radiation of the canopy layer by partitioning measured net radiation using exponential
+    function for Priestly-Taylor model.
+
+    Anderson, M. (1997). A two-source time-integrated model for estimating surface fluxes using thermal infrared remote
+        sensing. Remote Sensing of Environment, 60(2), 195–216.
+    Norman, J. M., Kustas, W. P., Prueger, J. H., & Diak, G. R. (2000). Surface flux estimation using radiometric
+        temperature: A dual-temperature-difference method to minimize measurement errors.
+        In Water Resources Research (Vol. 36, Issue 8, pp. 2263–2274). American Geophysical Union (AGU)."""
+
+    r_nc = netrad * (1 - np.exp((-constants.k * LAI) / np.sqrt(2 * np.cos(SZA))))
+    return r_nc
+
+
 def slope_vapour_pressure_curve(ta):
     """
     :param ta: Air Temperature [°C]
     :return: Slope of Vapor Pressure Curve
     """
 
-    d = (4098 * (0.6018 * np.exp((17.27 * ta)/(ta+237.3)))) / (ta + 237.3)**2
+    d = (4098 * (0.6018 * np.exp((17.27 * ta) / (ta + 237.3)))) / (ta + 237.3) ** 2
     return d
 
 
-def pm_standard(gs, ta, VPD, netrad, LAI, SZA, u, h, z,):
+def pm_standard(gs, ta, VPD, netrad, LAI, SZA, u, h, z, ):
     """Computes Transpiration based on Two-Layer Penman-Monteith method.
 
     Leuning, R.; Zhang, Y.Q.; Rajaud, A.; Cleugh, H.; Tu, K. A simple surface conductance model to estimate regional
@@ -97,7 +109,7 @@ def pm_standard(gs, ta, VPD, netrad, LAI, SZA, u, h, z,):
     """
 
     ga = aerodynamic_resistance(u, h, z)
-    Ac = canopy_available_energy(netrad, LAI*0.1, SZA)
+    Ac = canopy_available_energy(netrad, LAI * 0.1, SZA)
     d = slope_vapour_pressure_curve(ta)
     gamma = constants.psychrometric_constant
     cp = constants.air_specific_heat_capacity
@@ -122,10 +134,67 @@ def pm_inversed(T, ta, VPD, netrad, LAI, SZA, u, h, z):
     """
 
     ga = aerodynamic_resistance(u, h, z)
-    Ac = canopy_available_energy(netrad, LAI*0.1, SZA)
+    Ac = canopy_available_energy(netrad, LAI, SZA)
     d = slope_vapour_pressure_curve(ta)
     gamma = constants.psychrometric_constant
     cp = constants.air_specific_heat_capacity
     roh = constants.air_density
-    gs = (d * ga * T * gamma) / (Ac * d + cp * ga * roh * VPD - d * T * gamma)
+    # gs = (d * ga * T * gamma) / (Ac * d + cp * ga * roh * VPD - d * T * gamma)
+    gs = (ga * T * roh) / (Ac * d + cp * ga * roh * VPD - d * T - gamma * T)
     return gs
+
+
+def pt_standard(ta, netrad, LAI, SZA, alpha_c):
+    """Priestly-Taylor model for Transpiration.
+    Gan, G., & Liu, Y. (2020). Inferring transpiration from evapotranspiration: A transpiration indicator using
+        the Priestley-Taylor coefficient of wet environment. In Ecological Indicators (Vol. 110, p. 105853).
+        Elsevier BV."""
+
+    d = slope_vapour_pressure_curve(ta)
+    gamma = constants.psychrometric_constant
+    R_nc = net_radiation_canopy(netrad, LAI, SZA)
+    T = alpha_c + (d / (d + gamma)) * R_nc
+    return T
+
+
+def pt_inversed(ta, netrad, LAI, SZA, T):
+    """Inverted Priestly-Taylor equation to calculate alpha_c from given Transpiration."""
+    d = slope_vapour_pressure_curve(ta)
+    gamma = constants.psychrometric_constant
+    R_nc = net_radiation_canopy(netrad, LAI, SZA)
+    alpha_c = T * (d + gamma) / (d * R_nc)
+    return alpha_c
+
+
+if __name__ == "__main__":
+    sites = pd.read_csv("site_meta.csv", index_col=0)
+
+    for site in list(sites.index):
+        try:
+            df = pd.read_csv(f"~/Projects/ml-trans/data/sfn_lai/{site}.csv", index_col=0, parse_dates=True)
+        except FileNotFoundError:
+            continue
+        df = df.dropna()
+        doy = pd.Series(data=df.index.dayofyear, index=df.index)
+        solar_declination = get_solar_declination(doy)
+        hour_angle = get_hour_angle(df.index)
+
+        zenith_angle = get_zenith_angle(solar_declination, hour_angle,
+                                        latitude=to_radiant(sites[sites.index == site]["lat"].item()))
+
+        try:
+            gc = pm_inversed(T=df["transpiration"] * 2.45, ta=df["t2m"], VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
+                             SZA=zenith_angle, u=df["windspeed"], h=df["height"], z=df["height"])
+        except KeyError:
+            continue
+        try:
+            alpha = pt_inversed(ta=df["t2m"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
+                                T=df["transpiration"] * 2.45)
+        except KeyError:
+            continue
+        alpha = alpha.rename("alpha")
+        alpha = alpha.loc[(alpha < 20) & (alpha > 0)]
+        gc = gc.rename("gc")
+        df = pd.concat([df, gc], axis=1)
+        df = pd.concat([df, alpha], axis=1)
+        df.to_csv(f"/home/hannemam/Projects/ml-trans/data/param/{site}.csv")

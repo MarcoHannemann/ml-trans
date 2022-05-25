@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
 import metrics
 
+
 def scatter_density_plot(df_train, df_test, df_val, title, density=True, upper_lim=10):
     """Creates a scatter plot with density visualization based on Gaussian KDE for training, testing and validation
     data of the neural network.
@@ -13,9 +14,6 @@ def scatter_density_plot(df_train, df_test, df_val, title, density=True, upper_l
     :param title: Title of the scatter plot
     :param upper_lim: Upper limit of X/Y axes.
     """
-
-
-
 
     # scatter density plot using Gaussian KDE
     # https://stackoverflow.com/a/20107592/14234692 Answer by Joe Kington
