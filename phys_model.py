@@ -4,6 +4,29 @@ import pandas as pd
 import constants
 
 
+def latent_heat_vaporization(ta):
+    """Calculates latent heat of vaporization from air temperature.
+    Stull, B., 1988: An Introduction to Boundary Layer Meteorology (p.641) Kluwer Academic Publishers,
+        Dordrecht, Netherlands.
+    Foken, T, 2008: Micrometeorology. Springer, Berlin, Germany.
+
+    :param ta: Air temperature [°C]
+    :return: Latent heat of vaporization [J kg-1]
+    """
+
+    return 2.501 - 0.00237 * ta
+
+
+def latent_heat_to_evaporation(LE, ta):
+    lam = latent_heat_vaporization(ta)
+    return LE / lam
+
+
+def evaporation_to_latent_heat(ET, ta):
+    lam = latent_heat_vaporization(ta)
+    return ET * lam
+
+
 def to_radiant(lat):
     """converts latitude in decimal degrees to radiants."""
     return np.pi / 180 * lat
@@ -90,11 +113,14 @@ def slope_vapour_pressure_curve(ta):
     return d
 
 
-def pm_standard(gs, ta, VPD, netrad, LAI, SZA, u, h, z, ):
+def pm_standard(gc, ta, VPD, netrad, LAI, SZA, u, h, z, ):
     """Computes Transpiration based on Two-Layer Penman-Monteith method.
+       Canopy stomatal conductance gc is estimated from stomatal conductance gs by applying the "big-leaf" model.
 
     Leuning, R.; Zhang, Y.Q.; Rajaud, A.; Cleugh, H.; Tu, K. A simple surface conductance model to estimate regional
         evaporation using MODIS leaf area index and the Penman-Monteith equation. Water Resour. Res. 2008, 44.
+    Ding, R., Kang, S., Du, T., Hao, X., & Zhang, Y. (2014). Scaling up stomatal conductance from leaf to canopy using
+        a dual-leaf model for estimating crop evapotranspiration. PloS One, 9(4), e95584.
 
     :param gs: Canopy Conductance
     :param ta: Air temperature [°C]
@@ -109,12 +135,12 @@ def pm_standard(gs, ta, VPD, netrad, LAI, SZA, u, h, z, ):
     """
 
     ga = aerodynamic_resistance(u, h, z)
-    Ac = canopy_available_energy(netrad, LAI * 0.1, SZA)
+    Ac = canopy_available_energy(netrad, LAI, SZA)
     d = slope_vapour_pressure_curve(ta)
     gamma = constants.psychrometric_constant
     cp = constants.air_specific_heat_capacity
     roh = constants.air_density
-    T = (d * Ac + roh * cp * VPD * ga) / (d + gamma * (1 + ga / gs))
+    T = (d * Ac + roh * cp * VPD * ga) / (d + gamma * (1 + ga / gc))
     return T
 
 
@@ -130,7 +156,7 @@ def pm_inversed(T, ta, VPD, netrad, LAI, SZA, u, h, z):
     :param u: wind speed at height z [m/s]
     :param h: canopy height [m]
     :param z: height of wind/relative humidty sensor [m]
-    :return: gs: Canopy conductance
+    :return: gc: Canopy conductance
     """
 
     ga = aerodynamic_resistance(u, h, z)
@@ -139,9 +165,8 @@ def pm_inversed(T, ta, VPD, netrad, LAI, SZA, u, h, z):
     gamma = constants.psychrometric_constant
     cp = constants.air_specific_heat_capacity
     roh = constants.air_density
-    # gs = (d * ga * T * gamma) / (Ac * d + cp * ga * roh * VPD - d * T * gamma)
-    gs = (ga * T * roh) / (Ac * d + cp * ga * roh * VPD - d * T - gamma * T)
-    return gs
+    gc = ((T * ga * gamma) / (Ac * d + cp * ga * roh * VPD - T * (d + gamma))) * LAI
+    return gc
 
 
 def pt_standard(ta, netrad, LAI, SZA, alpha_c):

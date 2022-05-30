@@ -9,7 +9,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
 # todo: filter out negative transpiration and nightime values
-
+# todo: add doy as columns for split data
 
 def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     """
@@ -21,6 +21,7 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     :param freq: Temporal resolution. Currently only "1D" supported
     :return: data: data dictionary with structure {basename: pd.DataFrame}
     """
+
     csv_files = glob.glob(f"{path}*.csv")
 
     # read CSV file for each site and store to dictionary, drop rows containing NaN
@@ -37,6 +38,12 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
         data[sitename].loc[(data[sitename]['vpd'] < 0)] = np.nan
         data[sitename].loc[(data[sitename][target] < 0)] = np.nan
         data[sitename].loc[(data[sitename]['ssr'] < 0)] = np.nan
+
+        # drop alternative target columns
+        targets = ["transpiration", "gc", "alpha"]
+        targets.remove(target)
+        data[sitename].drop(columns=targets, inplace=True)
+
         if "tr_ca" in list(data[sitename].columns):
             data[sitename].drop(columns=["tr_ca"], inplace=True)
         data[sitename].dropna(how="any", inplace=True)
@@ -72,7 +79,7 @@ def dict_to_df(data: dict) -> pd.DataFrame:
     :param data: dictionary containing site dataframes
     :return: single concatenated DataFrame
     """
-    data = pd.concat(data.values()).reset_index(drop=True)
+    data = pd.concat(data.values())
     return data
 
 
@@ -132,7 +139,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     :param features: List of feature names incoroporated in model
     :param ext_prediction: Path to directory with external sites (CSV)
     :param freq: Temporal resolution 1D | 1H
-    :return: dictionary containing transformed training data
+    :return: dictionary containing transformed training data and untransformed samples
     """
 
     # divide input features based on scale (interval, nominal)
@@ -179,7 +186,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
 
     # if external prediction is activated, external input features are transformed here
     if ext_prediction is not None:
-        ext_data = load_external(ext_prediction, freq=freq)
+        ext_data = load_external(ext_prediction, features=features, freq=freq)
         for sitename, df in ext_data.items():
             df_transformed = df.reset_index(drop=True)
             df_transformed = pd.DataFrame(full_pipeline.transform(df_transformed), columns=num_attributes + new_categories)
@@ -187,10 +194,11 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
 
     return {"Xtrain": np.array(df_train), "Ytrain": np.expand_dims(np.array(y_train), axis=1),
             "Xtest": np.array(df_test), "Ytest": np.expand_dims(np.array(y_test), axis=1),
-            "Xval": np.array(df_val), "Yval": np.expand_dims(np.array(y_val), axis=1)}
+            "Xval": np.array(df_val), "Yval": np.expand_dims(np.array(y_val), axis=1),
+            "untransformed": {"Xtrain": x_train, "Xtest": x_test, "Xval": x_val}}
 
 
-def load_external(path: str, freq: str = "1D") -> dict:
+def load_external(path: str, features, freq: str = "1D") -> dict:
     """Loads tabular data for prediction outside of training. Files must contain all variables involved in training."""
     csv_files = sorted(glob.glob(f"{path}/*.csv"))
     ext_data = {}
@@ -204,12 +212,16 @@ def load_external(path: str, freq: str = "1D") -> dict:
             del ext_data[sitename]
             continue
         # todo: No preprocessing done before resampling (e.g. filter invalid data)
+        # Check if all features are present in FLUXNET samples
+        if not all(x in list(ext_data[sitename].columns) for x in features):
+            continue
         ext_data[sitename] = ext_data[sitename].resample(freq).mean()
         ext_data[sitename]["IGBP"] = igbp
     filtered_data = {}
     for sitename, df in ext_data.items():
-        if df["IGBP"].unique().item() in ["ENF", "DBF", "EBF", "MF"]:
-            filtered_data[sitename] = df
+        if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF', 'WSA', 'SAV', 'MF', 'DNF']:
+            # 2002-07-04: Start of MODIS data
+            filtered_data[sitename] = df["2002-07-04": "2007-12-31"]
         else:
             continue
     return filtered_data
@@ -228,7 +240,7 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, target="tran
     :return train_data: Dictionary with preprocessed training data
     """
     keys = ["site_info", "setup", "model", "results"]
-    metadata = {key:{} for key in keys}
+    metadata = {key: {} for key in keys}
     # load tabular point data
     sfn_data = load_tabular(path_csv, features, target=target, freq=freq)
 

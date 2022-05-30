@@ -2,14 +2,17 @@ import os
 import glob
 from datetime import datetime
 import json
+import math
 from typing import Union
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from sklearn.metrics import r2_score
 
 import load_model_data
+import phys_model
 import plotting
 import metrics
 
@@ -68,7 +71,7 @@ def predict(model, x, y):
     :return: Data frame with and predicted data (y_pred) and true (y_pred) if target is known
     """
     pred = model.predict(x)
-    return predictions_to_dataframe(y, pred) if y else pred
+    return predictions_to_dataframe(y, pred) if y is not None else pred
 
 
 def predict_fluxnet(model):
@@ -76,7 +79,7 @@ def predict_fluxnet(model):
 
     :param model: Compiled tf.keras model
     """
-    idx = pd.date_range('01-01-2002', '31-12-2007 23:00:00', freq='1D')
+    idx = pd.date_range('2002-07-04', '31-12-2007 23:00:00', freq='1D')
     predictions_all_stations = pd.DataFrame(index=idx)
 
     files = sorted(glob.glob("output/fluxnet/*csv"))
@@ -103,21 +106,21 @@ def predict_fluxnet(model):
 
 # load data and set model options
 features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
-upper_lim = 10
+
 
 layers = 5
 neurons = 256
-dropout_rate = 0.45
+dropout_rate = False
 act_fn = "selu"
 
-ext_path = "data/fluxnet"
-ext_path = None
+ext_path = "data/fluxnet_lai"
+#ext_path = None
 
 # load model data and create sequential model
 train_data, metadata = load_model_data.load(path_csv="data/param/", freq="1D", features=features,
-                                            blacklist="whitelist.csv", target="gc",
+                                            blacklist="whitelist.csv", target="transpiration",
                                             external_prediction=ext_path)
-
+upper_lim = 25 # 10**(math.ceil(math.log(train_data["Ytrain"].max(), 10))) // 5
 input_shape = train_data["Xtrain"].shape[1]
 model = create_model(inp_shape=input_shape,
                      activation=act_fn,
@@ -149,9 +152,21 @@ df_train = predict(model, train_data["Xtrain"], train_data["Ytrain"])
 df_test = predict(model, train_data["Xtest"], train_data["Ytest"])
 df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
+
+"""x = train_data["untransformed"]["Xtrain"].reset_index()
+T = phys_model.pm_standard(gc=df_train["y_pred"], ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"], SZA=0, u=x["height"], h=x["height"], z=x["height"], )
+c = pd.concat([x["transpiration"],
+               phys_model.latent_heat_to_evaporation(T, train_data["untransformed"]["Xtrain"]["t2m"].to_numpy())],
+              axis=1)
+c.columns = ["true", "pred"]
+print(r2_score(c["true"], c["pred"]))
+c.plot(kind="scatter", x="pred", y="true", xlim=(0, 20), ylim=(0, 20))
+plt.show()"""
+
+
 # visualize model results in a scatter plot for training, testing, validation
-plotting.scatter_density_plot(df_train, df_test, df_val, title=f"{layers} Layers, {neurons} Neurons, "
-                                                               f"Dropout: {dropout_rate}",
+plotting.scatter_density_plot(df_train, df_test, df_val,
+                              title=f"{layers} Layers, {neurons} Neurons, Dropout: {dropout_rate}",
                               density=True,
                               upper_lim=upper_lim)
 
