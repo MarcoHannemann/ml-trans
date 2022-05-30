@@ -85,7 +85,7 @@ def canopy_available_energy(netrad, LAI, SZA):
     :return: Ac: Canopy available energy
     """
 
-    Ac = netrad * ((1 - np.exp(-0.5 * LAI)) / np.cos(SZA))
+    Ac = netrad * ((1 - np.exp(-0.5 * LAI) / np.cos(SZA)))
     return Ac
 
 
