@@ -137,7 +137,7 @@ neurons = 256
 dropout_rate = 0.1
 act_fn = "selu"
 
-ext_path = "data/fluxnet_lai"
+ext_path = "data/fluxnet_hourly"
 #ext_path = None
 
 # load model data and create sequential model

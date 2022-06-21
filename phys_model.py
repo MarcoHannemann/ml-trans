@@ -3,6 +3,8 @@ import pandas as pd
 
 import constants
 
+# todo: psychrometric constant is not constant
+
 
 def latent_heat_vaporization(ta):
     """Calculates latent heat of vaporization from air temperature.
@@ -11,7 +13,7 @@ def latent_heat_vaporization(ta):
     Foken, T, 2008: Micrometeorology. Springer, Berlin, Germany.
 
     :param ta: Air temperature [°C]
-    :return: Latent heat of vaporization [J kg-1]
+    :return: Latent heat of vaporization [J kg-1] or MJ??
     """
 
     return 2.501 - 0.00237 * ta
@@ -72,7 +74,7 @@ def aerodynamic_resistance(u, h, z):
     zh = z
     z0m = 0.1 * h
     z0h = 0.1 * z0m
-    ga = (np.log((zm - d) / z0m) * np.log((zh - d) / z0h)) / constants.karmann ** 2 * u
+    ga = (np.log((zm - d) / z0m) * np.log((zh - d) / z0h)) / (constants.karmann ** 2 * u)
     return ga
 
 
@@ -187,7 +189,8 @@ def pt_inversed(ta, netrad, LAI, SZA, T):
     d = slope_vapour_pressure_curve(ta)
     gamma = constants.psychrometric_constant
     R_nc = net_radiation_canopy(netrad, LAI, SZA)
-    alpha_c = T * (d + gamma) / (d * R_nc)
+    #alpha_c = T * (d + gamma) / (d * R_nc)
+    alpha_c = (d * (T - R_nc) + gamma * T) / (d + gamma)
     return alpha_c
 
 
