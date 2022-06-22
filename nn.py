@@ -81,12 +81,14 @@ def predict_fluxnet(model, target="transpiration"):
     predictions_all_stations = pd.DataFrame(index=idx)
 
     files = sorted(glob.glob("output/fluxnet/*csv"))
-    for file in files:
-        print(f"Predicting {os.path.basename(file)[:-4]}...")
+    sitenames = [os.path.basename(file)[:-4] for file in files]
+    for sitename, file in zip(sitenames, files):
+        print(f"Predicting {sitename}...")
         # open transformed input data
         arr = np.array(pd.read_csv(file))
         result = predict(model, arr, y=None)
         series = pd.Series(result.flatten())
+
         try:
             series.index = idx
         except ValueError:
@@ -96,21 +98,22 @@ def predict_fluxnet(model, target="transpiration"):
 
         # If target is canopy conductance, apply Penman-Monteith equation on predictions
         if target == "gc":
-            df = pd.read_csv(file, parse_dates=True)
+            df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
+            df = df['2002-07-04': '31-12-2007 23:00:00'].resample("1D").mean()
             gc = series.copy()
-            gc /= 1000
             gc.index = df.index
             series = phys_model.latent_heat_to_evaporation(
-                phys_model.pm_standard(gc=gc, ta=df["t2m"], VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"], SZA=0,
+                phys_model.pm_standard(gc=gc, p=df["sp"], ta=df["t2m"], VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"], SZA=0,
                                        u=df["height"], h=df["height"], z=df["height"]), df["t2m"])
             series.index = idx
         # If target is alpha, apply Priestly-Taylor equation
         elif target == "alpha":
-            df = pd.read_csv(file, parse_dates=True)
+            df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
+            df = df['2002-07-04': '31-12-2007 23:00:00'].resample("1D").mean()
             alpha = series.copy()
             alpha.index = df.index
             series = phys_model.latent_heat_to_evaporation(
-                phys_model.pt_standard(ta=df["t2m"], netrad=df["ssr"], LAI=df["LAI"],
+                phys_model.pt_standard(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"],
                                        SZA=0, alpha_c=alpha), ta=df["t2m"])
             series.index = idx
 
@@ -127,31 +130,25 @@ def predict_fluxnet(model, target="transpiration"):
 
 
 # model settings
-features = ["t2m", "swvl1", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
-target = "transpiration"
+features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
+target = "gc"
 frequency = "1D"
 
 # model architecture
 layers = 5
 neurons = 256
-dropout_rate = 0.1
+dropout_rate = 0.35
 act_fn = "selu"
 
 ext_path = "data/fluxnet_hourly"
 #ext_path = None
 
 # load model data and create sequential model
-train_data, metadata = load_model_data.load(path_csv="data/param/", freq=frequency, features=features,
+train_data, metadata = load_model_data.load(path_csv="data/physical_parameter/", freq=frequency, features=features,
                                             blacklist="whitelist.csv", target=target,
                                             external_prediction=ext_path)
 
-# Scale canopy conductance so make NN converge faster
-if target == "gc":
-    train_data["Ytrain"] *= 1000
-    train_data["Ytest"] *= 1000
-    train_data["Yval"] *= 1000
-
-upper_lim = 10  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
+upper_lim = 100  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
 input_shape = train_data["Xtrain"].shape[1]
 model = create_model(inp_shape=input_shape,
                      activation=act_fn,
@@ -161,7 +158,7 @@ model = create_model(inp_shape=input_shape,
 
 # Callbacks
 # Early Stopping if validation loss doesn't change within specified number of epochs
-es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=500)
+es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=200)
 
 # Store model parameters
 model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")
@@ -189,11 +186,11 @@ df_val = predict(model, train_data["Xval"], train_data["Yval"])
 if ext_path:
     predict_fluxnet(model, target=target)
 
-if target == "gc":
+"""if target == "gc":
     x = train_data["untransformed"]["Xtrain"].reset_index()
-    T = phys_model.pm_standard(gc=df_train["y_pred"]/1000, ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"], SZA=0,
+    T = phys_model.pm_standard(gc=df_train["y_pred"], p=x["sp"], ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"], SZA=0,
                                u=x["windspeed"], h=x["height"], z=x["height"], )
-    t_true = phys_model.pm_standard(gc=df_train["y_true"]/1000, ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"],
+    t_true = phys_model.pm_standard(gc=df_train["y_true"], p=x["sp"], ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"],
                                     SZA=0,
                                     u=x["windspeed"], h=x["height"], z=x["height"], )
     c = pd.concat(
@@ -203,7 +200,7 @@ if target == "gc":
     c.columns = ["true", "pred"]
     print(r2_score(c["true"], c["pred"]))
     c.plot(kind="scatter", x="pred", y="true", xlim=(0, 100), ylim=(0, 100), s=0.3)
-    plt.show()
+    plt.show()"""
 
 # visualize model results in a scatter plot for training, testing, validation
 plotting.scatter_density_plot(df_train, df_test, df_val,

@@ -6,17 +6,19 @@ import constants
 # todo: psychrometric constant is not constant
 
 
-def latent_heat_vaporization(ta):
-    """Calculates latent heat of vaporization from air temperature.
-    Stull, B., 1988: An Introduction to Boundary Layer Meteorology (p.641) Kluwer Academic Publishers,
+def latent_heat_vaporization(ta, conversion_factor=1):
+    """Calculates latent heat of vaporization from air temperature (Average 2.45).
+        If J kg-1 is wanted, apply conversionf factor of 10**6
+    Stull, B., 1988: An Introduction to Boundary Layer Meteorology (p. 641). Kluwer Academic Publishers,
         Dordrecht, Netherlands.
     Foken, T, 2008: Micrometeorology. Springer, Berlin, Germany.
 
+        Checked! Yields 2.44 at 25°C
     :param ta: Air temperature [°C]
-    :return: Latent heat of vaporization [J kg-1] or MJ??
+    :param conversion_factor: 1 for MJ kg-1, 10**6 for J kg -1
+    :return: Latent heat of vaporization [MJ kg-1]
     """
-
-    return 2.501 - 0.00237 * ta
+    return (2.501 - 0.00237 * ta) * conversion_factor
 
 
 def psychrometric_constant(air_pressure, air_temperature):
@@ -34,31 +36,39 @@ def psychrometric_constant(air_pressure, air_temperature):
             / (constants.molecular_water_air_ratio * latent_heat_vaporization(air_temperature)))
 
 
-def latent_heat_to_evaporation(LE, ta, time="1D"):
+def latent_heat_to_evaporation(LE, ta, scale="1D"):
     """Converts latent heat flux (W m-2) to Evaporation (mm).
     :param LE: Latent Heat Flux [W m-2]
     :param ta: Air temperature [°C]
-    :param time: Temporal resolution [1D|1H] for conversion of kg m-2 s-1
+    :param scale: Temporal resolution [1D|1H] for conversion of kg m-2 s-1
     :return: Evaporation [mm]"""
-    if time == "1D":
-        seconds = 86_400
-    elif time == "1H":
-        seconds = 3_600
+    seconds_scale = {"1D": 86_400, "1H": 3_600}
+    try:
+        seconds = seconds_scale[scale]
+    except ValueError:
+        print(f"Invalid temporal resolution: {scale}")
+        raise
+
     lam = latent_heat_vaporization(ta, conversion_factor=10**6)
     return LE / lam * seconds
 
 
-def evaporation_to_latent_heat(ET, ta, time="1D"):
+
+
+def evaporation_to_latent_heat(ET, ta, scale="1D"):
     """Converts Evaporation (mm) to latent heat flux (W m-2).
     :param ET: vaporation [mm]
     :param ta: Air temperature [°C]
-    :param time: Temporal resolution [1D|1H] for conversion of Mj m-2 d-1
+    :param scale: Temporal resolution [1D|1H] for conversion of Mj m-2 d-1
     :return: Latent Heat Flux [W m-2]"""
 
-    if time == "1D":
-        seconds = 86_400
-    elif time == "1H":
-        seconds = 3_600
+    seconds_scale = {"1D": 86_400, "1H": 3_600}
+    try:
+        seconds = seconds_scale[scale]
+    except ValueError:
+        print(f"Invalid temporal resolution: {scale}")
+        raise
+
     lam = latent_heat_vaporization(ta, 10**6)
     return ET * lam / seconds
 

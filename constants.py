@@ -1,4 +1,4 @@
-karmann = 0.41
+karman = 0.41
 # Density of air [-]
 air_density = 1.2
 
