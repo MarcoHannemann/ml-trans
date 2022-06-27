@@ -193,7 +193,7 @@ def pm_standard(gc, p, ta, VPD, netrad, LAI, SZA, u, h, z, ):
     return T
 
 
-def pm_inversed(T, p, ta, VPD, netrad, LAI, SZA, u, h, z):
+def pm_inverted(T, p, ta, VPD, netrad, LAI, SZA, u, h, z):
     """Inverted Penman-Monteith equation to calculate canopy conductance from given Transpiration.
 
     :param T: Transpiration [W/m²]
@@ -246,7 +246,7 @@ def pt_standard(ta, p, netrad, LAI, SZA, alpha_c=1.26):
     return T
 
 
-def pt_inversed(ta, p, netrad, LAI, SZA, T):
+def pt_inverted(ta, p, netrad, LAI, SZA, T):
     """Inverted Priestly-Taylor equation to calculate alpha_c from given Transpiration."""
     d = slope_vapour_pressure_curve(ta)
     gamma = psychrometric_constant(air_pressure=p, air_temperature=ta)
@@ -272,14 +272,14 @@ if __name__ == "__main__":
                                         latitude=to_radiant(sites[sites.index == site]["lat"].item()))
 
         try:
-            gc = pm_inversed(T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]), p=df["sp"], ta=df["t2m"],
+            gc = pm_inverted(T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]), p=df["sp"], ta=df["t2m"],
                              VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
                              SZA=zenith_angle, u=df["windspeed"], h=df["height"], z=df["height"])
 
         except KeyError:
             continue
         try:
-            alpha = pt_inversed(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
+            alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
                                 T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]))
         except KeyError:
             continue
