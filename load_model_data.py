@@ -11,7 +11,7 @@ from sklearn.pipeline import Pipeline
 # todo: filter out negative transpiration and nightime values
 # todo: add doy as columns for split data so that the doy is known after scaling
 # todo: check sklearn.preprocessing.RobustScaler for outlier detection
-
+# filter out night time values before
 
 def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     """
@@ -253,7 +253,7 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     for sitename, df in ext_data.items():
         if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF', 'WSA', 'SAV', 'MF', 'DNF']:
             # 2002-07-04: Start of MODIS data
-            filtered_data[sitename] = df["2002-07-04": "2007-12-31"]
+            filtered_data[sitename] = df["2002-07-04": "2015-12-31"]
         else:
             continue
     return filtered_data

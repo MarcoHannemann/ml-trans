@@ -37,6 +37,11 @@ def predictions_to_dataframe(y_true, y_pred):
     return df
 
 
+def calculate_aic(n, mse, n_params):
+    aic = n * np.log(mse/n) + 2 * n_params
+    return aic
+
+
 def create_model(inp_shape: int = 11, activation: str = 'relu', n_layers: int = 2, n_neurons: int = 32,
                  dropout: Union[bool, float] = False) -> tf.keras.Model():
     """Creates a sequential model with tf.keras for regression problems.
@@ -78,7 +83,7 @@ def predict_fluxnet(model, target="transpiration", freq="1D"):
     :param model: Compiled tf.keras model
     :param target: Target the model was trained on [transpiration|gc|alpha]
     """
-    idx = pd.date_range('2002-07-04', '31-12-2007 23:00:00', freq=freq)
+    idx = pd.date_range('2002-07-04', '2015-12-31 22:00:00', freq=freq)
     predictions_all_stations = pd.DataFrame(index=idx)
 
     files = sorted(glob.glob("output/fluxnet/*csv"))
@@ -100,7 +105,7 @@ def predict_fluxnet(model, target="transpiration", freq="1D"):
         # If target is canopy conductance, apply Penman-Monteith equation on predictions
         if target == "gc":
             df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
-            df = df['2002-07-04': '31-12-2007 23:00:00'].resample(freq).mean()
+            df = df['2002-07-04': '2015-12-31 22:00:00'].resample(freq).mean()
             gc = series.copy()
             gc.index = df.index
             series = phys_model.latent_heat_to_evaporation(
@@ -110,7 +115,7 @@ def predict_fluxnet(model, target="transpiration", freq="1D"):
         # If target is alpha, apply Priestly-Taylor equation
         elif target == "alpha":
             df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
-            df = df['2002-07-04': '31-12-2007 23:00:00'].resample(freq).mean()
+            df = df['2002-07-04': '2015-12-31 22:00:00'].resample(freq).mean()
             alpha = series.copy()
             alpha.index = df.index
             series = phys_model.latent_heat_to_evaporation(
@@ -148,7 +153,7 @@ ext_path = "data/fluxnet_hourly"
 train_data, metadata = load_model_data.load(path_csv="data/physical_parameter_1H/", freq=frequency, features=features,
                                             blacklist="whitelist.csv", target=target,
                                             external_prediction=ext_path)
-print(10 ** (math.ceil(math.log(train_data["Ytrain"].max(), 10))))
+#print(10 ** (math.ceil(math.log(train_data["Ytrain"].max(), 10))))
 upper_lim = 10  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
 input_shape = train_data["Xtrain"].shape[1]
 model = create_model(inp_shape=input_shape,
@@ -169,12 +174,20 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  verbose=1)
 
 # train model
-model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=5000, batch_size=1000, callbacks=[es_callback, cp_callback],
-          validation_data=(train_data["Xtest"], train_data["Ytest"]))
-# todo: load pretrained model
-# checkpoint_path = "??"
-# model.load_weights(checkpoint_path)
+#model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=5000, batch_size=1000, callbacks=[es_callback, cp_callback],
+#          validation_data=(train_data["Xtest"], train_data["Ytest"]))
 
+
+# load pretrained model
+#model = tf.keras.models.load_model('/home/hannemam/Projects/saved_models/20220622_11:52:46_pt_daily/')
+
+
+# aic
+n_params = sum(tf.keras.backend.count_params(x) for x in model.trainable_weights)
+loss = model.history.history["loss"][-1]
+n = len(train_data["Ytrain"])
+aic = calculate_aic(n=n, mse=loss, n_params=n_params)
+print(aic)
 # Save trained model to disk
 model.save(f"models/{model_time}")
 
