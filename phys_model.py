@@ -53,8 +53,6 @@ def latent_heat_to_evaporation(LE, ta, scale="1D"):
     return LE / lam * seconds
 
 
-
-
 def evaporation_to_latent_heat(ET, ta, scale="1D"):
     """Converts Evaporation (mm) to latent heat flux (W m-2).
     :param ET: vaporation [mm]
@@ -241,7 +239,7 @@ def pt_standard(ta, p, netrad, LAI, SZA, alpha_c=1.26):
     d = slope_vapour_pressure_curve(ta)
     gamma = psychrometric_constant(p, ta)
     R_nc = net_radiation_canopy(netrad, LAI, SZA)
-    T = alpha_c + (d / (d + gamma)) * R_nc
+    T = alpha_c * (d / (d + gamma)) * R_nc
 
     return T
 
