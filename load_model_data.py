@@ -48,7 +48,7 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
         try:
             igbp = data[sitename]["IGBP"].iloc[0]
         except IndexError:
-            print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP/canopy height.")
+            print(f"WARNING: {sitename} contains empty dataframe or is missing variable.")
             del data[sitename]
             continue
 
@@ -251,7 +251,7 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     # Filter data by PFT and time period
     filtered_data = {}
     for sitename, df in ext_data.items():
-        if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF', 'WSA', 'SAV', 'MF', 'DNF']:
+        if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF',  'SAV', 'MF', 'DNF']:
             # 2002-07-04: Start of MODIS data
             filtered_data[sitename] = df["2002-07-04": "2015-12-31"]
         else:
