@@ -13,6 +13,7 @@ from sklearn.pipeline import Pipeline
 # todo: check sklearn.preprocessing.RobustScaler for outlier detection
 # filter out night time values before
 
+
 def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     """
     Loads comma seperates value files containing time series for a single location into a data dictionary.

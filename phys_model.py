@@ -3,8 +3,6 @@ import pandas as pd
 
 import constants
 
-# todo: psychrometric constant is not constant
-
 
 def latent_heat_vaporization(ta, conversion_factor=1):
     """Calculates latent heat of vaporization from air temperature (Average 2.45).
