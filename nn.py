@@ -37,6 +37,11 @@ def predictions_to_dataframe(y_true, y_pred):
     return df
 
 
+def calculate_aic(n, mse, n_params):
+    aic = n * np.log(mse/n) + 2 * n_params
+    return aic
+
+
 def create_model(inp_shape: int = 11, activation: str = 'relu', n_layers: int = 2, n_neurons: int = 32,
                  dropout: Union[bool, float] = False) -> tf.keras.Model():
     """Creates a sequential model with tf.keras for regression problems.
@@ -72,21 +77,30 @@ def predict(model, x, y):
     return predictions_to_dataframe(y, pred) if y is not None else pred
 
 
-def predict_fluxnet(model, target="transpiration"):
+def predict_fluxnet(model, target="transpiration", freq="1D"):
     """Uses trained model to predict T at FLUXNET sites.
 
     :param model: Compiled tf.keras model
+    :param target: Target the model was trained on [transpiration|gc|alpha]
     """
-    idx = pd.date_range('2002-07-04', '31-12-2007 23:00:00', freq='1D')
+    idx = pd.date_range('2002-07-04', '2015-12-31 22:00:00', freq=freq)
     predictions_all_stations = pd.DataFrame(index=idx)
-
+    alpha_all_stations = pd.DataFrame(index=idx)
     files = sorted(glob.glob("output/fluxnet/*csv"))
-    for file in files:
-        print(f"Predicting {os.path.basename(file)[:-4]}...")
+    sitenames = [os.path.basename(file)[:-4] for file in files]
+    for sitename, file in zip(sitenames, files):
+        print(f"Predicting {sitename}...")
         # open transformed input data
         arr = np.array(pd.read_csv(file))
-        result = predict(model, arr, y=None)
+
+        # following try/except block for test cases only
+        try:
+            result = predict(model, arr, y=None)
+        except ValueError:
+            print(f"IBBP not valid for {sitename}")
+            continue
         series = pd.Series(result.flatten())
+
         try:
             series.index = idx
         except ValueError:
@@ -96,62 +110,67 @@ def predict_fluxnet(model, target="transpiration"):
 
         # If target is canopy conductance, apply Penman-Monteith equation on predictions
         if target == "gc":
-            df = pd.read_csv(file, parse_dates=True)
+            df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
+            df = df['2002-07-04': '2015-12-31 22:00:00'].resample(freq).mean()
             gc = series.copy()
-            gc /= 1000
             gc.index = df.index
             series = phys_model.latent_heat_to_evaporation(
-                phys_model.pm_standard(gc=gc, ta=df["t2m"], VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"], SZA=0,
+                phys_model.pm_standard(gc=gc, p=df["sp"], ta=df["t2m"], VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"], SZA=0,
                                        u=df["height"], h=df["height"], z=df["height"]), df["t2m"])
             series.index = idx
+            predictions_all_stations = pd.concat([predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
+                                                 axis=1)
         # If target is alpha, apply Priestly-Taylor equation
         elif target == "alpha":
-            df = pd.read_csv(file, parse_dates=True)
+
+            df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
+            df = df['2002-07-04': '2015-12-31 22:00:00'].resample(freq).mean()
             alpha = series.copy()
             alpha.index = df.index
             series = phys_model.latent_heat_to_evaporation(
-                phys_model.pt_standard(ta=df["t2m"], netrad=df["ssr"], LAI=df["LAI"],
-                                       SZA=0, alpha_c=alpha), ta=df["t2m"])
+                phys_model.pt_standard(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"],
+                                       SZA=0, alpha_c=alpha), ta=df["t2m"], scale=freq)
             series.index = idx
-
+            predictions_all_stations = pd.concat([predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
+                                                 axis=1)
         # Append FLUXNET prediction to data frame
-        predictions_all_stations = pd.concat([predictions_all_stations,
-                                              series.rename(os.path.basename(file)[:-4])],
-                                             axis=1)
+
+        #alpha_all_stations = pd.concat([alpha_all_stations, alpha.rename(os.path.basename(file)[:-4])],
+        #                                     axis=1)
         series.plot(lw=0.3)
         plt.savefig(f'output/fluxnet_predictions/fig/{os.path.basename(file)[:-4]}')
         plt.clf()
 
     # Write out CSV with all FLUXNET predictions
-    predictions_all_stations.to_csv(f'output/fluxnet_predictions/flx_predictions_{target}.csv')
-
+    predictions_all_stations.to_csv(f'output/fluxnet_predictions/{model_time}-flx_predictions_{target}.csv')
+    alpha_all_stations.to_csv(f'output/fluxnet_predictions/{model_time}-flx_coefficients_{target}.csv')
 
 # model settings
-features = ["t2m", "swvl1", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
-target = "transpiration"
+# input variables for training
+features = ["t2m", "ssr", "swvl1", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
+# target model gets trained on: transpiration for direct estimation, alpha for Priestly-Taylor coefficient
+target = "alpha"
+# temporal resolution of the model. Set data paths accordingly
 frequency = "1D"
 
 # model architecture
 layers = 5
 neurons = 256
-dropout_rate = 0.1
+dropout_rate = 0.35
+early_stopping_epochs = 200
 act_fn = "selu"
 
 ext_path = "data/fluxnet_hourly"
 #ext_path = None
 
 # load model data and create sequential model
-train_data, metadata = load_model_data.load(path_csv="data/param/", freq=frequency, features=features,
-                                            blacklist="whitelist.csv", target=target,
+train_data, metadata = load_model_data.load(path_csv="data/physical_parameter_ca/", freq=frequency, features=features,
+                                            blacklist="config/whitelist.csv", target=target,
                                             external_prediction=ext_path)
+#print(10 ** (math.ceil(math.log(train_data["Ytrain"].max(), 10))))
+upper_lim = 100  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
 
-# Scale canopy conductance so make NN converge faster
-if target == "gc":
-    train_data["Ytrain"] *= 1000
-    train_data["Ytest"] *= 1000
-    train_data["Yval"] *= 1000
-
-upper_lim = 10  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
+# Create sequential model from settings
 input_shape = train_data["Xtrain"].shape[1]
 model = create_model(inp_shape=input_shape,
                      activation=act_fn,
@@ -161,9 +180,9 @@ model = create_model(inp_shape=input_shape,
 
 # Callbacks
 # Early Stopping if validation loss doesn't change within specified number of epochs
-es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=500)
+es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=early_stopping_epochs)
 
-# Store model parameters
+# Store model training checkpoints
 model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")
 checkpoint_path = f"checkpoint/{model_time}/cp.ckpt"
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
@@ -171,11 +190,20 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  verbose=1)
 
 # train model
-model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=5000, batch_size=500, callbacks=[es_callback, cp_callback],
+model.fit(train_data["Xtrain"], train_data["Ytrain"], epochs=5000, batch_size=1000, callbacks=[es_callback, cp_callback],
           validation_data=(train_data["Xtest"], train_data["Ytest"]))
-# todo: load pretrained model
-# checkpoint_path = "??"
-# model.load_weights(checkpoint_path)
+
+
+# load pretrained model
+#model = tf.keras.models.load_model('/home/hannemam/Projects/saved_models/20220622_11:52:46_pt_daily/')
+
+
+# aic
+n_params = sum(tf.keras.backend.count_params(x) for x in model.trainable_weights)
+loss = model.history.history["loss"][-1]
+n = len(train_data["Ytrain"])
+aic = calculate_aic(n=n, mse=loss, n_params=n_params)
+print(aic)
 
 # Save trained model to disk
 model.save(f"models/{model_time}")
@@ -185,15 +213,12 @@ df_train = predict(model, train_data["Xtrain"], train_data["Ytrain"])
 df_test = predict(model, train_data["Xtest"], train_data["Ytest"])
 df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
-# Use model to predict T at FLUXNET sites
-if ext_path:
-    predict_fluxnet(model, target=target)
 
-if target == "gc":
+"""if target == "gc":
     x = train_data["untransformed"]["Xtrain"].reset_index()
-    T = phys_model.pm_standard(gc=df_train["y_pred"]/1000, ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"], SZA=0,
+    T = phys_model.pm_standard(gc=df_train["y_pred"], p=x["sp"], ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"], SZA=0,
                                u=x["windspeed"], h=x["height"], z=x["height"], )
-    t_true = phys_model.pm_standard(gc=df_train["y_true"]/1000, ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"],
+    t_true = phys_model.pm_standard(gc=df_train["y_true"], p=x["sp"], ta=x["t2m"], VPD=x["vpd"], netrad=x["ssr"], LAI=x["LAI"],
                                     SZA=0,
                                     u=x["windspeed"], h=x["height"], z=x["height"], )
     c = pd.concat(
@@ -203,11 +228,12 @@ if target == "gc":
     c.columns = ["true", "pred"]
     print(r2_score(c["true"], c["pred"]))
     c.plot(kind="scatter", x="pred", y="true", xlim=(0, 100), ylim=(0, 100), s=0.3)
-    plt.show()
+    plt.show()"""
 
 # visualize model results in a scatter plot for training, testing, validation
+# Density should be disabled for hourly resolution, since KDE needs to much computation power
 plotting.scatter_density_plot(df_train, df_test, df_val,
-                              title=f"{layers} Layers, {neurons} Neurons, Dropout: {dropout_rate}",
+                              title=f"Target: {target}, {layers} Layers, {neurons} Neurons, Dropout: {dropout_rate}",
                               density=True,
                               upper_lim=upper_lim)
 
@@ -216,6 +242,7 @@ metadata["model"]["layers"] = layers
 metadata["model"]["neurons"] = neurons
 metadata["model"]["activation"] = act_fn
 metadata["model"]["dropout"] = dropout_rate
+metadata["model"]["early_stopping"] = early_stopping_epochs
 
 _, m1, b1 = metrics.linear_fit(df_train["y_true"], df_train["y_pred"], upper_lim=upper_lim)
 metadata["results"]["training"] = {"MAE": metrics.mae(df_train["y_true"], df_train["y_pred"]),
@@ -237,3 +264,6 @@ metadata["results"]["cpk_path"] = f"checkpoint/{model_time}/"
 with open(f"models/{model_time}.json", "w") as fp:
     json.dump(metadata, fp, indent=1)
 
+# Use model to predict T at FLUXNET sites
+if ext_path:
+    predict_fluxnet(model, target=target, freq=frequency)
