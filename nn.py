@@ -11,9 +11,6 @@ import os
 import glob
 from datetime import datetime
 import json
-import argparse
-
-import math
 from typing import Union
 
 import configparser
@@ -21,7 +18,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from sklearn.metrics import r2_score
 
 import load_model_data
 import phys_model

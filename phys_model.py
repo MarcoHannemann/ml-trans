@@ -18,7 +18,6 @@ def latent_heat_vaporization(ta, conversion_factor=1):
         Dordrecht, Netherlands.
     Foken, T, 2008: Micrometeorology. Springer, Berlin, Germany.
 
-        Checked! Yields 2.44 at 25°C
     :param ta: Air temperature [°C]
     :param conversion_factor: 1 for MJ kg-1, 10**6 for J kg -1
     :return: Latent heat of vaporization [MJ kg-1]
@@ -30,8 +29,6 @@ def psychrometric_constant(air_pressure, air_temperature):
     """The ratio of specific heat (Cp) of moist air at constant pressure to latent heat (Lv) of vaporization of water.
        Average about 0.4 gwater/kgair K-1
        FAO Eq. 8 https://www.fao.org/3/x0490e/x0490e07.htm
-
-       Checked! Yields 0.054 at 25°C and 81.8 kPa
 
     :param air_pressure: Atmospheric Pressure [kPa]
     :param air_temperature: Air Temperature [°C]
@@ -143,11 +140,10 @@ def slope_vapour_pressure_curve(ta):
     """Calculates the slope of the relationship between saturation vapour pressure and temperature.
     FAO Eq. 13: https://www.fao.org/3/x0490e/x0490e07.htm
 
-        Checked! Yields 0.059 at 5°C
     :param air_temperature: Air Temperature [°C]
     :return: Slope of saturation vapour pressure curve at air temperature [kPa °C-1]"""
 
-    d = (4098 * (0.6018 * np.exp((17.27 * ta) / (ta + 237.3)))) / (ta + 237.3) ** 2
+    d = (4098 * (0.6108 * np.exp((17.27 * ta) / (ta + 237.3)))) / (ta + 237.3) ** 2
     return d
 
 
@@ -210,7 +206,7 @@ def pm_inverted(T, p, ta, VPD, netrad, LAI, SZA, u, h, z):
 
 
 def pt_standard(ta, p, netrad, LAI, SZA, alpha_c=1.26):
-    """Priestly-Taylor model for Transpiration. If no PT-coefficient alpha_c is given, 1.26 is used as default value
+    """Priestley-Taylor model for Transpiration. If no PT-coefficient alpha_c is given, 1.26 is used as default value
     following Cammalleri et al. 2012.
 
     Gan, G., & Liu, Y. (2020). Inferring transpiration from evapotranspiration: A transpiration indicator using
