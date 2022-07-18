@@ -1,3 +1,12 @@
+#!/usr/bin/python3
+
+"""
+nn.py
+~~~~~
+nn.py is the main script of ml-trans. It contains the source for the artificial neural network (ANN) and couples the
+workflow steps: Loading -> Preprocessing -> Training -> Prediction -> Model evaluation.
+"""
+
 import os
 import glob
 from datetime import datetime
@@ -45,8 +54,8 @@ def calculate_aic(n, mse, n_params):
     return aic
 
 
-def create_model(inp_shape: int = 11, activation: str = 'relu', n_layers: int = 2, n_neurons: int = 32,
-                 dropout: Union[bool, float] = False) -> tf.keras.Model():
+def initialize_model(inp_shape: int = 11, activation: str = 'relu', n_layers: int = 2, n_neurons: int = 32,
+                     dropout: Union[bool, float] = False) -> tf.keras.Model():
     """Creates a sequential model with tf.keras for regression problems.
 
     :param inp_shape: Input shape of the input feature data. Equal to number of dataframe columns
@@ -56,41 +65,44 @@ def create_model(inp_shape: int = 11, activation: str = 'relu', n_layers: int = 
     :param dropout: False or dropout rate
     :return: Compiled model ready to be fitted to training data
     """
-    model = tf.keras.Sequential()
-    model.add(tf.keras.Input(shape=(inp_shape,)))
+    model_instance = tf.keras.Sequential()
+    model_instance.add(tf.keras.Input(shape=(inp_shape,)))
     for i in range(0, n_layers):
-        model.add(tf.keras.layers.Dense(n_neurons, activation=activation))
+        model_instance.add(tf.keras.layers.Dense(n_neurons, activation=activation))
         if dropout:
-            model.add(tf.keras.layers.Dropout(dropout))
-    model.add(tf.keras.layers.Dense(1))
-    model.compile(loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"])
-    return model
+            model_instance.add(tf.keras.layers.Dropout(dropout))
+    model_instance.add(tf.keras.layers.Dense(1))
+    model_instance.compile(loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"])
+    return model_instance
 
 
-def predict(model: tf.keras.Model(), x: np.ndarray, y: Union[None, np.ndarray]) -> np.ndarray:
-    """Uses model to make predictions based on input feature data and creates data frame with true values for
+def predict(trained_model: tf.keras.Model(), x: np.ndarray, y: Union[None, np.ndarray]) -> np.ndarray:
+    """Uses trained model to make predictions based on input feature data and creates data frame with true values for
     comparison.
 
-    :param model: Compiled tf.keras model
+    :param trained_model: Compiled tf.keras model
     :param x: Input feature data. Must be of same dimension as compiled model
     :param y: True Y data for comparison
     :return: Data frame with and predicted data (y_pred) and true (y_pred) if target is known
     """
-    pred = model.predict(x)
+    pred = trained_model.predict(x)
     return predictions_to_dataframe(y, pred) if y is not None else pred
 
 
 def predict_fluxnet(trained_model: tf.keras.Model(), target_var: str = "transpiration", freq: str = "1D") -> None:
     """Uses trained model to predict T at FLUXNET sites.
 
-
     :param trained_model: Compiled tf.keras model
     :param target_var: Target the model was trained on [ transpiration || gc || alpha ]
     :param freq: Temporal resolution of model [ 1D || 1H ]
     """
+
+    # create empty dataframe for predictions period
     idx = pd.date_range('2002-07-04', '2015-12-31 22:00:00', freq=freq)
     predictions_all_stations = pd.DataFrame(index=idx)
     alpha_all_stations = pd.DataFrame(index=idx)
+
+    # get files for transformed input data
     files = sorted(glob.glob("output/fluxnet/*csv"))
     sitenames = [os.path.basename(file)[:-4] for file in files]
     for sitename, file in zip(sitenames, files):
@@ -120,8 +132,8 @@ def predict_fluxnet(trained_model: tf.keras.Model(), target_var: str = "transpir
             gc = series.copy()
             gc.index = df.index
             series = phys_model.latent_heat_to_evaporation(
-                phys_model.pm_standard(gc=gc, p=df["sp"], ta=df["t2m"], VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"], SZA=0,
-                                       u=df["height"], h=df["height"], z=df["height"]), df["t2m"])
+                phys_model.pm_standard(gc=gc, p=df["sp"], ta=df["t2m"], VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
+                                       SZA=0, u=df["height"], h=df["height"], z=df["height"]), df["t2m"])
             series.index = idx
             predictions_all_stations = pd.concat([predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
                                                  axis=1)
@@ -140,7 +152,7 @@ def predict_fluxnet(trained_model: tf.keras.Model(), target_var: str = "transpir
                                                  axis=1)
         # Append FLUXNET prediction to data frame
 
-        #alpha_all_stations = pd.concat([alpha_all_stations, alpha.rename(os.path.basename(file)[:-4])],
+        # alpha_all_stations = pd.concat([alpha_all_stations, alpha.rename(os.path.basename(file)[:-4])],
         #                                     axis=1)
         series.plot(lw=0.3)
         plt.savefig(f'output/fluxnet_predictions/fig/{os.path.basename(file)[:-4]}')
@@ -155,6 +167,8 @@ if __name__ == "__main__":
     # parser = argparse.ArgumentParser()
     # parser.add_argument("tank", type=str)
     # parser.parse_args()
+
+    # read configuration file
     cp = configparser.ConfigParser(delimiters='=', converters={'list': lambda x: [i.strip() for i in x.split(',')]})
     cp.read('config/config.ini')
 
@@ -163,8 +177,8 @@ if __name__ == "__main__":
     whitelist = cp["PATHS"]["whitelist"]
     ext_path = cp["PATHS"]["prediction_data"]
 
+    # training settings
     retrain = cp.getboolean("TRAINING", "train")
-    # train settings
     features = cp.getlist("TRAINING", "features")
     target = cp["TRAINING"]["target"]
     frequency = cp["TRAINING"]["frequency"]
@@ -180,22 +194,22 @@ if __name__ == "__main__":
     early_stopping_epochs = cp.getint("MODEL.ARCHITECTURE", "early_stopping_epochs")
     act_fn = cp["MODEL.ARCHITECTURE"]["activation_fn"]
 
+    # Retrain model if retrain is enabled
     if retrain:
         # load model data and create sequential model
         train_data, metadata = load_model_data.load(path_csv=inp_path, freq=frequency, features=features,
                                                     blacklist=whitelist, target=target,
                                                     external_prediction=ext_path)
 
-        # print(10 ** (math.ceil(math.log(train_data["Ytrain"].max(), 10))))
-        upper_lim = 20  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
+
 
         # Create sequential model from settings
         input_shape = train_data["Xtrain"].shape[1]
-        model = create_model(inp_shape=input_shape,
-                             activation=act_fn,
-                             n_layers=layers,
-                             n_neurons=neurons,
-                             dropout=dropout_rate)
+        model = initialize_model(inp_shape=input_shape,
+                                 activation=act_fn,
+                                 n_layers=layers,
+                                 n_neurons=neurons,
+                                 dropout=dropout_rate)
 
         # Callbacks
         # Early Stopping if validation loss doesn't change within specified number of epochs
@@ -232,20 +246,24 @@ if __name__ == "__main__":
         df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
         # visualize model results in a scatter plot for training, testing, validation
-        # Density should be disabled for hourly resolution, since KDE needs to much computation power
+        # Density should be disabled for hourly resolution, since KDE needs too much computation power
+
+        # axes scale, depends on target
+        upper_lim = 20  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
         plotting.scatter_density_plot(df_train, df_test, df_val,
                                       title=f"Target: {target}, {layers} Layers, {neurons} Neurons, "
                                             f"Dropout: {dropout_rate}",
                                       density=True,
                                       upper_lim=upper_lim)
 
-        # write metadata to JSON
+        # set model metadata
         metadata["model"]["layers"] = layers
         metadata["model"]["neurons"] = neurons
         metadata["model"]["activation"] = act_fn
         metadata["model"]["dropout"] = dropout_rate
         metadata["model"]["early_stopping"] = early_stopping_epochs
 
+        # calculate performance metrics for prediction on training data
         _, m1, b1 = metrics.linear_fit(df_train["y_true"], df_train["y_pred"], upper_lim=upper_lim)
         metadata["results"]["training"] = {"MAE": metrics.mae(df_train["y_true"], df_train["y_pred"]),
                                            "corr": metrics.r2(df_train["y_true"], df_train["y_pred"]),
@@ -263,6 +281,7 @@ if __name__ == "__main__":
 
         metadata["results"]["cpk_path"] = f"checkpoint/{model_time}/"
 
+        # write metadata to JSON
         with open(f"models/{model_time}.json", "w") as fp:
             json.dump(metadata, fp, indent=1)
     else:
@@ -271,4 +290,6 @@ if __name__ == "__main__":
 
     # Use model to predict T at FLUXNET sites
     if ext_path:
-        predict_fluxnet(model, target_var=target, freq=frequency)
+        predict_fluxnet(model,
+                        target_var=target,
+                        freq=frequency)

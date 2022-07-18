@@ -1,3 +1,10 @@
+"""
+phys_model.py
+~~~~~~~~~~~~~
+This module contains all physical equations for the Priestley-Taylor and the Penman-Monteith Evaporation models.
+Can be run as stand-alone for creating training target data by inverting PT or PM.
+"""
+
 import numpy as np
 import pandas as pd
 
@@ -40,15 +47,9 @@ def latent_heat_to_evaporation(LE, ta, scale="1D"):
     :param ta: Air temperature [°C]
     :param scale: Temporal resolution [1D|1H] for conversion of kg m-2 s-1
     :return: Evaporation [mm]"""
-    seconds_scale = {"1D": 86_400, "1H": 3_600}
-    try:
-        seconds = seconds_scale[scale]
-    except ValueError:
-        print(f"Invalid temporal resolution: {scale}")
-        raise
 
     lam = latent_heat_vaporization(ta, conversion_factor=10**6)
-    return LE / lam * seconds
+    return LE / lam * pd.to_timedelta(scale).total_seconds()
 
 
 def evaporation_to_latent_heat(ET, ta, scale="1D"):
@@ -58,15 +59,8 @@ def evaporation_to_latent_heat(ET, ta, scale="1D"):
     :param scale: Temporal resolution [1D|1H] for conversion of Mj m-2 d-1
     :return: Latent Heat Flux [W m-2]"""
 
-    seconds_scale = {"1D": 86_400, "1H": 3_600}
-    try:
-        seconds = seconds_scale[scale]
-    except ValueError:
-        print(f"Invalid temporal resolution: {scale}")
-        raise
-
-    lam = latent_heat_vaporization(ta, 10**6)
-    return ET * lam / seconds
+    lam = latent_heat_vaporization(ta, conversion_factor=10**6)
+    return ET * lam / pd.to_timedelta(scale).total_seconds()
 
 
 def to_radiant(lat):

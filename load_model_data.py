@@ -1,3 +1,10 @@
+"""
+load_model_data.py
+~~~~~~~~~~~~~~~~~~
+This module contains the data reading and preprocessing steps. It is imported by nn.py and handles loading, filtering,
+transforming and storing input and output data.
+"""
+
 import os
 import glob
 
