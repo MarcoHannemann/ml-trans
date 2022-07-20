@@ -3,7 +3,7 @@
 """
 nn.py
 ~~~~~
-nn.py is the main script of ml-trans. It contains the source for the artificial neural network (ANN) and couples the
+nn.py is the core of ml-trans. It contains the source for the artificial neural network (ANN) and couples the
 workflow steps: Loading -> Preprocessing -> Training -> Prediction -> Model evaluation.
 """
 
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     ext_path = cp["PATHS"]["prediction_data"]
 
     # training settings
-    retrain = cp.getboolean("TRAINING", "train")
+    retrain = cp.getboolean("TRAINING", "retrain")
     features = cp.getlist("TRAINING", "features")
     target = cp["TRAINING"]["target"]
     frequency = cp["TRAINING"]["frequency"]
@@ -196,8 +196,6 @@ if __name__ == "__main__":
         train_data, metadata = load_model_data.load(path_csv=inp_path, freq=frequency, features=features,
                                                     blacklist=whitelist, target=target,
                                                     external_prediction=ext_path)
-
-
 
         # Create sequential model from settings
         input_shape = train_data["Xtrain"].shape[1]
