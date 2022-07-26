@@ -202,6 +202,9 @@ def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp) -> float:
     the daily average, t1 refers to sunrise and t2 to sunset respectively. Therefore h is estimated by taking the
     minimum and maximum daily hour angle.
 
+    :param lat: Latitude [deg]
+    :param lon: Longitude [deg]
+    ;
     Hogan, R. J., & Hirahara, S. (2016). Effect of solar zenith angle specification in models on mean shortwave
             fluxes and stratospheric temperatures. In Geophysical Research Letters (Vol. 43, Issue 1, pp. 482–488).
             American Geophysical Union (AGU). https://doi.org/10.1002/2015gl066868"""

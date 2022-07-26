@@ -5,6 +5,7 @@ This module contains all physical equations for the Priestley-Taylor and the Pen
 Can be run as stand-alone for creating training target data by inverting PT or PM.
 """
 
+# todo: Check RuntimeWarning in np.sqrt(2 * np.cos(SZA))), faulty SZA?
 import numpy as np
 import pandas as pd
 import solar
@@ -92,7 +93,7 @@ def canopy_available_energy(netrad, LAI, SZA):
     :return: Ac: Canopy available energy
     """
 
-    Ac = netrad * (1 - np.exp(-0.5 * LAI.item()) / np.cos((SZA)))
+    Ac = netrad * (1 - np.exp(-0.5 * LAI / np.cos((SZA))))
     return Ac
 
 
@@ -170,7 +171,7 @@ def pm_inverted(T, p, ta, VPD, netrad, LAI, SZA, u, h, z):
     """
 
     ga = aerodynamic_resistance(u, h, z)
-    Ac = canopy_available_energy(netrad, LAI, SZA)
+    Ac = net_radiation_canopy(netrad, LAI, SZA)
     d = slope_vapour_pressure_curve(ta)
     gamma = psychrometric_constant(air_pressure=p, air_temperature=ta)
     cp = constants.air_specific_heat_capacity
@@ -229,7 +230,7 @@ if __name__ == "__main__":
         day_series = pd.Series(df.index)
         day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude, lon=longitude, date=day))
         zenith_angle = np.degrees(np.arccos(day_series))
-
+        zenith_angle.index = df.index
         try:
             gc = pm_inverted(T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]), p=df["sp"], ta=df["t2m"],
                              VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
