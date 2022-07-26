@@ -5,7 +5,7 @@ This module contains all physical equations for the Priestley-Taylor and the Pen
 Can be run as stand-alone for creating training target data by inverting PT or PM.
 """
 
-# todo: Check RuntimeWarning in np.sqrt(2 * np.cos(SZA))), faulty SZA?
+# todo: Check RuntimeWarning in np.sqrt(2 * np.cos(SZA))), negative SZA? Use radians!
 import numpy as np
 import pandas as pd
 import solar
@@ -93,7 +93,7 @@ def canopy_available_energy(netrad, LAI, SZA):
     :return: Ac: Canopy available energy
     """
 
-    Ac = netrad * (1 - np.exp(-0.5 * LAI / np.cos((SZA))))
+    Ac = netrad * (1 - np.exp(-0.5 * LAI / np.cos(SZA)))
     return Ac
 
 
@@ -107,7 +107,7 @@ def net_radiation_canopy(netrad, LAI, SZA):
         temperature: A dual-temperature-difference method to minimize measurement errors.
         In Water Resources Research (Vol. 36, Issue 8, pp. 2263–2274). American Geophysical Union (AGU)."""
 
-    r_nc = netrad * (1 - np.exp(-constants.k * LAI / np.sqrt(2 * np.cos(SZA))))
+    r_nc = netrad * (1 - np.exp(-constants.k * LAI / np.sqrt(2 * np.cos(np.radians(SZA)))))
     return r_nc
 
 
@@ -219,17 +219,20 @@ def pt_inverted(ta, p, netrad, LAI, SZA, T):
 if __name__ == "__main__":
     sites = pd.read_csv("site_meta.csv", index_col=0)
     for site in list(sites.index):
-        print(site)
         try:
             df = pd.read_csv(f"~/Projects/ml-trans/data/sapfluxnet_daily/{site}.csv", index_col=0, parse_dates=True)
         except FileNotFoundError:
             continue
         df = df.dropna()
+        if len(df) == 0:
+            print(f"Data missing for site {site}")
+            continue
         latitude = sites[sites.index == site]["lat"].item()
         longitude = sites[sites.index == site]["lon"].item()
         day_series = pd.Series(df.index)
         day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude, lon=longitude, date=day))
         zenith_angle = np.degrees(np.arccos(day_series))
+
         zenith_angle.index = df.index
         try:
             gc = pm_inverted(T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]), p=df["sp"], ta=df["t2m"],
@@ -239,7 +242,7 @@ if __name__ == "__main__":
         except KeyError:
             continue
         try:
-            alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=np.array(zenith_angle),
+            alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
                                 T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]))
         except KeyError:
             continue

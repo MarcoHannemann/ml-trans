@@ -10,7 +10,7 @@ from timezonefinder import TimezoneFinder
 from nptyping import NDArray, Shape
 from typing import Any
 
-
+# todo: make functions work with scalars where possible (e.g. solar dec)
 class Location:
     """Class Location to compute earth-sun relationships at a location on a given date."""
     lat: float
@@ -166,13 +166,33 @@ class Location:
         )
 
     def calc_sunrise_sunset(self):
-        """Calculates sunrise at sunset as pd.Timestamp."""
+        """Calculates sunrise at sunset as pd.Timestamp.
+
+        Note that for e.g. days without night time at high latitudes, sunrise/sunset cannot be calculated. In this case,
+        _sunrise_hour_angle() returns NaN or values greater than 1. We set sunrise to 1 minutes before the first time
+        step and sunset to 1 minute after the last time step respectively in order to not mask out any night values."""
+
         solnoon = self._solar_noon()
         sunrise_hour_angle = self._sunrise_hour_angle()
         sunrise_decimal = 24 * (solnoon - sunrise_hour_angle * 4 / 1440)
         sunset_decimal = 24 * (solnoon + sunrise_hour_angle * 4 / 1440)
-        sunrises = []
-        sunsets = []
+
+        if np.isnan(sunrise_decimal[0]) and sunrise_decimal[0] > 1 and sunset_decimal[0] > 24:
+            self.sunrise = (self.local_date[0].replace(hour=int(sunrise_decimal[0]),
+                                                       minute=int((sunrise_decimal[0] * 60) % 60),
+                                                       second=int((sunrise_decimal[0] * 3600) % 60)
+                                                       ))
+
+            self.sunset = (self.local_date[0].replace(hour=int(sunset_decimal[0]),
+                                                      minute=int((sunset_decimal[0] * 60) % 60),
+                                                      second=int((sunset_decimal[0] * 3600) % 60)
+                                                      ))
+
+        else:
+            # No day/nighttime
+            self.sunrise = self.local_date[0] - pd.to_timedelta("1min")
+            self.sunset = self.local_date[-1] + pd.to_timedelta("1min")
+        """
         for enum, day in enumerate(self.local_date):
             try:
                 int(sunrise_decimal[enum])
@@ -188,9 +208,9 @@ class Location:
             sunsets.append(day.replace(hour=int(sunset_decimal[enum]),
                                        minute=int((sunset_decimal[enum] * 60) % 60),
                                        second=int((sunset_decimal[enum] * 3600) % 60)
-                                       ))
-        self.sunrise = sunrises
-        self.sunset = sunsets
+                                       ))"""
+        # self.sunrise = sunrises
+        # self.sunset = sunsets
 
 
 def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp) -> float:
