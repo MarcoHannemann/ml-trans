@@ -7,6 +7,7 @@ Can be run as stand-alone for creating training target data by inverting PT or P
 
 import numpy as np
 import pandas as pd
+import solar
 
 import constants
 
@@ -60,33 +61,6 @@ def evaporation_to_latent_heat(ET, ta, scale="1D"):
     return ET * lam / pd.to_timedelta(scale).total_seconds()
 
 
-def to_radiant(lat):
-    """converts latitude in decimal degrees to radiants."""
-    return np.pi / 180 * lat
-
-
-def get_solar_declination(day_of_year):
-    """Calculates the solar declination based on the day of year."""
-    return 0.0409 * np.sin((2 * np.pi / 365) * day_of_year - 1.39)
-
-
-def get_hour_angle(time):
-    """Calculates the sun hour angle based on day time."""
-    hourangle = pd.Series(data=time.hour, index=time) * 15
-    hourangle = hourangle.where(hourangle >= 0, hourangle + 360)
-    hourangle = hourangle.where(hourangle < 360, hourangle - 360)
-    return hourangle
-
-
-def get_zenith_angle(solardeclination, hourangle, latitude):
-    """Calculates the Solar Zenith Angle SZA.
-
-    Bonan, Gordon: Ecological Climatology: Concepts and Applicotions. p. 61 eq. 4.1.
-        Cambridge: Cambidge University Press, 2015."""
-    return np.cos(np.sin(latitude) * np.sin(solardeclination) +
-                  np.cos(latitude) * np.cos(solardeclination) * np.cos(hourangle))
-
-
 def aerodynamic_resistance(u, h, z):
     """Calculates aerodynamic resistance [s m-1]
 
@@ -118,7 +92,7 @@ def canopy_available_energy(netrad, LAI, SZA):
     :return: Ac: Canopy available energy
     """
 
-    Ac = netrad * (1 - np.exp(-0.5 * LAI) / np.cos(SZA))
+    Ac = netrad * (1 - np.exp(-0.5 * LAI.item()) / np.cos((SZA)))
     return Ac
 
 
@@ -243,19 +217,18 @@ def pt_inverted(ta, p, netrad, LAI, SZA, T):
 
 if __name__ == "__main__":
     sites = pd.read_csv("site_meta.csv", index_col=0)
-
     for site in list(sites.index):
+        print(site)
         try:
-            df = pd.read_csv(f"~/Projects/ml-trans/data/sfn_lai/{site}.csv", index_col=0, parse_dates=True)
+            df = pd.read_csv(f"~/Projects/ml-trans/data/sapfluxnet_daily/{site}.csv", index_col=0, parse_dates=True)
         except FileNotFoundError:
             continue
         df = df.dropna()
-        doy = pd.Series(data=df.index.dayofyear, index=df.index)
-        solar_declination = get_solar_declination(doy)
-        hour_angle = get_hour_angle(df.index)
-
-        zenith_angle = get_zenith_angle(solar_declination, hour_angle,
-                                        latitude=to_radiant(sites[sites.index == site]["lat"].item()))
+        latitude = sites[sites.index == site]["lat"].item()
+        longitude = sites[sites.index == site]["lon"].item()
+        day_series = pd.Series(df.index)
+        day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude, lon=longitude, date=day))
+        zenith_angle = np.degrees(np.arccos(day_series))
 
         try:
             gc = pm_inverted(T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]), p=df["sp"], ta=df["t2m"],
@@ -265,7 +238,7 @@ if __name__ == "__main__":
         except KeyError:
             continue
         try:
-            alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
+            alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=np.array(zenith_angle),
                                 T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]))
         except KeyError:
             continue
