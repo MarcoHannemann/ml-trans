@@ -5,13 +5,13 @@ This module contains all physical equations for the Priestley-Taylor and the Pen
 Can be run as stand-alone for creating training target data by inverting PT or PM.
 """
 
-# todo: Check RuntimeWarning in np.sqrt(2 * np.cos(SZA))), negative SZA? Use radians!
 import numpy as np
 import pandas as pd
+from scipy.stats import zscore
+
 import solar
-
 import constants
-
+from timezonefinder import TimezoneFinder
 
 def latent_heat_vaporization(ta, conversion_factor=1):
     """Calculates latent heat of vaporization from air temperature (Average 2.45).
@@ -106,8 +106,8 @@ def net_radiation_canopy(netrad, LAI, SZA):
     Norman, J. M., Kustas, W. P., Prueger, J. H., & Diak, G. R. (2000). Surface flux estimation using radiometric
         temperature: A dual-temperature-difference method to minimize measurement errors.
         In Water Resources Research (Vol. 36, Issue 8, pp. 2263–2274). American Geophysical Union (AGU)."""
-
-    r_nc = netrad * (1 - np.exp(-constants.k * LAI / np.sqrt(2 * np.cos(np.radians(SZA)))))
+    with np.errstate(invalid='ignore'):
+        r_nc = netrad * (1 - np.exp(-constants.k * LAI / np.sqrt(2 * np.cos(np.radians(SZA)))))
     return r_nc
 
 
@@ -227,15 +227,22 @@ if __name__ == "__main__":
         if len(df) == 0:
             print(f"Data missing for site {site}")
             continue
+
         latitude = sites[sites.index == site]["lat"].item()
         longitude = sites[sites.index == site]["lon"].item()
         day_series = pd.Series(df.index)
-        day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude, lon=longitude, date=day))
+
+        timezone_str = TimezoneFinder().timezone_at(lng=longitude, lat=latitude)
+        day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude,
+                                                                          lon=longitude,
+                                                                          date=day,
+                                                                          timezone=timezone_str))
+
         zenith_angle = np.degrees(np.arccos(day_series))
 
         zenith_angle.index = df.index
         try:
-            gc = pm_inverted(T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]), p=df["sp"], ta=df["t2m"],
+            gc = pm_inverted(T=evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]), p=df["sp"], ta=df["t2m"],
                              VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
                              SZA=zenith_angle, u=df["windspeed"], h=df["height"], z=df["height"])
 
@@ -243,12 +250,25 @@ if __name__ == "__main__":
             continue
         try:
             alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
-                                T=evaporation_to_latent_heat(df["transpiration"], df["t2m"]))
+                                T=evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]))
         except KeyError:
             continue
         alpha = alpha.rename("alpha")
-        alpha = alpha.loc[(alpha < 20) & (alpha > 0)]
         gc = gc.rename("gc")
         df = pd.concat([df, gc], axis=1)
+        #df["gc"].loc[df["gc"] < 0.01] = 0
+        #df["gc"].loc[df["gc"] > 75] = np.nan
+        #df["gc"].loc[df["ssr"] < 50] = np.nan
+
         df = pd.concat([df, alpha], axis=1)
-        df.to_csv(f"/home/hannemam/Projects/ml-trans/data/param/{site}.csv")
+        #df["alpha"].replace([np.inf, -np.inf], np.nan, inplace=True)
+        #print(df["alpha"].max())
+        #df = df[evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) < df["ssr"]]
+        #df = df[(evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) / df["ssr"]) < 1]
+        #df = df[(np.abs(zscore(df["alpha"], nan_policy="omit")) < 1)]
+        #df["alpha"].loc[df["ssr"] < 50] = np.nan
+        #df["alpha"].loc[df["LAI"] < 0.2] = np.nan
+        #df["alpha"].loc[df["alpha"] < 0] = np.nan
+        #print(df["alpha"].max())
+        #print("\n")
+        df.to_csv(f"/home/hannemam/Projects/ml-trans/data/alpha/{site}.csv")

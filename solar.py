@@ -3,14 +3,16 @@ solar.py
 ~~~~~~~~~~~~~
 This module introduces a class for solar calculations aiming at calculating the solar zenith angle (SZA).
 """
+import time
 
 import numpy as np
 import pandas as pd
-from timezonefinder import TimezoneFinder
-from nptyping import NDArray, Shape
-from typing import Any
+
+from nptyping import NDArray
 
 # todo: make functions work with scalars where possible (e.g. solar dec)
+
+
 class Location:
     """Class Location to compute earth-sun relationships at a location on a given date."""
     lat: float
@@ -25,7 +27,7 @@ class Location:
     # approximate correction for atmospheric refraction at sunrise and sunse
     zenith_constant = 90.833
 
-    def __init__(self, lat, lon, date):
+    def __init__(self, lat, lon, date, timezone):
         """
         :param lat: Latitude [degrees] of location, positive for North, negative for South
         :param lon: Longitude [degrees] of location, negative for East, positive for West
@@ -36,7 +38,7 @@ class Location:
         self.lat = lat
         self.lon = lon
         self.date = np.asarray(date)
-
+        self.timezone = timezone
         # Flag when single value is passed, convert to array
         self.is_scalar = False
         if self.date.ndim == 0:
@@ -45,10 +47,13 @@ class Location:
 
         # Timezone-aware timestamp, UTC offset, local standard meridian time and local standard time
         self.local_date = self._localize_date()
+
         self.offset = self._utc_offset()
         self.lt = self._local_time()
         self.lstm = self._local_standard_time_meridian()
         self.lst = None
+
+
 
         # Day angle, equation of time, solar declination, hour angle, solar elevation, SZA, sunrise & sunset
         self.day_angle = None
@@ -62,6 +67,7 @@ class Location:
 
     def compute(self):
         """Public method coupling the calculations to derive Sun Zenith Angle (SZA)"""
+
         self.calc_day_angle()
         self.solar_declination()
         self.equation_of_time()
@@ -70,6 +76,7 @@ class Location:
         self.solar_elevation()
         self.solar_zenith_angle()
         self.calc_sunrise_sunset()
+
 
         # Solar Zenith & hour angle are masked by sunrise and sunset -> NaN at night time
         if not self.is_scalar:
@@ -85,8 +92,7 @@ class Location:
 
     def _localize_date(self) -> NDArray:
         """Creates timezone-aware timestamp from Longitude and Latitude."""
-        timezone_string = TimezoneFinder().timezone_at(lng=self.lon, lat=self.lat)
-        return np.array([xi.tz_localize(timezone_string, ambiguous="NaT", nonexistent="NaT") for xi in self.date])
+        return np.array(pd.DatetimeIndex(self.date).tz_localize(self.timezone, ambiguous="NaT", nonexistent="NaT"))
 
     def _utc_offset(self) -> float:
         """Calculates the offset between local time and UTC in hours."""
@@ -192,42 +198,27 @@ class Location:
             # No day/nighttime
             self.sunrise = self.local_date[0] - pd.to_timedelta("1min")
             self.sunset = self.local_date[-1] + pd.to_timedelta("1min")
-        """
-        for enum, day in enumerate(self.local_date):
-            try:
-                int(sunrise_decimal[enum])
-            except ValueError:
-                # Skip times which are ambiguos because of DST
-                sunrises.append(np.nan)
-                sunsets.append(np.nan)
-                continue
-            sunrises.append(day.replace(hour=int(sunrise_decimal[enum]),
-                                        minute=int((sunrise_decimal[enum] * 60) % 60),
-                                        second=int((sunrise_decimal[enum] * 3600) % 60)
-                                        ))
-            sunsets.append(day.replace(hour=int(sunset_decimal[enum]),
-                                       minute=int((sunset_decimal[enum] * 60) % 60),
-                                       second=int((sunset_decimal[enum] * 3600) % 60)
-                                       ))"""
-        # self.sunrise = sunrises
-        # self.sunset = sunsets
 
 
-def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp) -> float:
+def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp, timezone) -> float:
     """This function calculates an approximation of the daily average cosine sun zenith angle [RAD] based on an
-    analytical solution by by Hogan et al. 2015.
+    analytical solution following Hogan et al. 2015.
 
-    The Cosine of SZA is computed as the average over the time when the sun is above the horizon. The method works for
+    The cosine of SZA is computed as the average over the time when the sun is above the horizon. The method works for
     any model time step with h_min and h_max expressing the hour angle at timestep t1 and t2. Since we are interested in
     the daily average, t1 refers to sunrise and t2 to sunset respectively. Therefore h is estimated by taking the
     minimum and maximum daily hour angle.
 
-    :param lat: Latitude [deg]
-    :param lon: Longitude [deg]
-    ;
     Hogan, R. J., & Hirahara, S. (2016). Effect of solar zenith angle specification in models on mean shortwave
             fluxes and stratospheric temperatures. In Geophysical Research Letters (Vol. 43, Issue 1, pp. 482–488).
-            American Geophysical Union (AGU). https://doi.org/10.1002/2015gl066868"""
+            American Geophysical Union (AGU). https://doi.org/10.1002/2015gl066868
+
+    :param lat: Latitude [deg]
+    :param lon: Longitude [deg]
+    :param date: date with hours set to 00 [pd.Timestamp]
+
+    :return cos_mean_sza: Cosine of daily average sun zenith angle [RAD]
+    """
 
     # The day timestamp is split into hours from 0H - 23H
     hourly_timesteps = pd.date_range(date, date + pd.to_timedelta("23H"), freq="H")
@@ -235,7 +226,8 @@ def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp) -> float:
     hourly_timesteps = hourly_timesteps.to_list()
 
     # Create Location object and compute relationships between site and the sun
-    site = Location(lat, lon, hourly_timesteps)
+    site = Location(lat, lon, hourly_timesteps, timezone)
+
     site.compute()
 
     # Minium and maximum hour angle for the day
@@ -252,3 +244,5 @@ def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp) -> float:
                       / (np.radians(h_max) - np.radians(h_min)))
 
     return cos_mean_sza
+
+
