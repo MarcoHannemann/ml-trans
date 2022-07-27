@@ -53,8 +53,6 @@ class Location:
         self.lstm = self._local_standard_time_meridian()
         self.lst = None
 
-
-
         # Day angle, equation of time, solar declination, hour angle, solar elevation, SZA, sunrise & sunset
         self.day_angle = None
         self.eot = None
@@ -77,18 +75,24 @@ class Location:
         self.solar_zenith_angle()
         self.calc_sunrise_sunset()
 
-
         # Solar Zenith & hour angle are masked by sunrise and sunset -> NaN at night time
         if not self.is_scalar:
-            try:
-                self.local_date < self.sunrise
-            except TypeError:
-                # On dates with time shift replace ambiguous time with NaN
-                self.local_date = np.where(pd.isnull(self.local_date), np.nan, self.local_date)
-            self.sza = np.where(self.local_date < self.sunrise, np.nan, self.sza)
-            self.sza = np.where(self.local_date > self.sunset, np.nan, self.sza)
-            self.hra = np.where(self.local_date < self.sunrise, np.nan, self.hra)
-            self.hra = np.where(self.local_date > self.sunset, np.nan, self.hra)
+            if pd.isnull(self.sunrise):
+                # Edge case: Polar night
+                self.sza = np.empty(24)
+                self.sza[:] = np.nan
+                self.hra = np.empty(24)
+                self.hra[:] = np.nan
+            else:
+                try:
+                    self.local_date < self.sunrise
+                except TypeError:
+                    # Remove NaT value in case of timeshift, caused by time zone localizing
+                    self.local_date = np.where(pd.isnull(self.local_date), np.nan, self.local_date)
+                self.sza = np.where(self.local_date < self.sunrise, np.nan, self.sza)
+                self.sza = np.where(self.local_date > self.sunset, np.nan, self.sza)
+                self.hra = np.where(self.local_date < self.sunrise, np.nan, self.hra)
+                self.hra = np.where(self.local_date > self.sunset, np.nan, self.hra)
 
     def _localize_date(self) -> NDArray:
         """Creates timezone-aware timestamp from Longitude and Latitude."""
@@ -96,7 +100,10 @@ class Location:
 
     def _utc_offset(self) -> float:
         """Calculates the offset between local time and UTC in hours."""
-        return self.local_date[0].utcoffset().total_seconds() / 60 / 60
+        # ensure we do not catch a NaT in case of non-existent time caused by DST
+        valid_date = self.local_date[~pd.isnull(self.local_date)][0]
+        return valid_date.utcoffset().total_seconds() / 60 / 60
+
 
     def _local_time(self) -> NDArray:
         """Calculates the local time in minutes."""
@@ -180,10 +187,13 @@ class Location:
 
         solnoon = self._solar_noon()
         sunrise_hour_angle = self._sunrise_hour_angle()
-        sunrise_decimal = 24 * (solnoon - sunrise_hour_angle * 4 / 1440)
-        sunset_decimal = 24 * (solnoon + sunrise_hour_angle * 4 / 1440)
+        sunrise_share = (solnoon - sunrise_hour_angle * 4 / 1440)
+        sunset_share = (solnoon + sunrise_hour_angle * 4 / 1440)
+        sunrise_decimal = sunrise_share * 24
+        sunset_decimal = sunset_share * 24
 
-        if np.isnan(sunrise_decimal[0]) and sunrise_decimal[0] > 1 and sunset_decimal[0] > 24:
+        if not(np.isnan(sunrise_decimal[0])) and sunrise_share[0] < 1 and sunset_share[0] < 1:
+        #if not np.isnan(sunrise_decimal[0]):
             self.sunrise = (self.local_date[0].replace(hour=int(sunrise_decimal[0]),
                                                        minute=int((sunrise_decimal[0] * 60) % 60),
                                                        second=int((sunrise_decimal[0] * 3600) % 60)
@@ -194,8 +204,13 @@ class Location:
                                                       second=int((sunset_decimal[0] * 3600) % 60)
                                                       ))
 
+        # Edge cases for polar regions
+        elif (self.sza > 90).all():
+            # Polar night, there is no sunrise or sunset
+            self.sunrise = pd.NaT
+            self.sunset = pd.NaT
         else:
-            # No day/nighttime
+            # Midnight sun, we assume the sun rises at 00:01AM and sets at 11:59PM
             self.sunrise = self.local_date[0] - pd.to_timedelta("1min")
             self.sunset = self.local_date[-1] + pd.to_timedelta("1min")
 

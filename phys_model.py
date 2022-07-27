@@ -13,6 +13,7 @@ import solar
 import constants
 from timezonefinder import TimezoneFinder
 
+
 def latent_heat_vaporization(ta, conversion_factor=1):
     """Calculates latent heat of vaporization from air temperature (Average 2.45).
         If J kg-1 is wanted, apply conversionf factor of 10**6
@@ -217,30 +218,38 @@ def pt_inverted(ta, p, netrad, LAI, SZA, T):
 
 
 if __name__ == "__main__":
+    # Get list of site name codes
     sites = pd.read_csv("site_meta.csv", index_col=0)
     for site in list(sites.index):
         try:
             df = pd.read_csv(f"~/Projects/ml-trans/data/sapfluxnet_daily/{site}.csv", index_col=0, parse_dates=True)
         except FileNotFoundError:
             continue
+
+        # Skip empty data frames
         df = df.dropna()
         if len(df) == 0:
             print(f"Data missing for site {site}")
             continue
 
+        # Get latlon coordinates for site
         latitude = sites[sites.index == site]["lat"].item()
         longitude = sites[sites.index == site]["lon"].item()
-        day_series = pd.Series(df.index)
 
+        # Identify timezone string for the site for date localization in solar.py (e.g. Europe/Berlin)
         timezone_str = TimezoneFinder().timezone_at(lng=longitude, lat=latitude)
+
+        # Apply daily SZA averaging
+        day_series = pd.Series(df.index)
         day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude,
                                                                           lon=longitude,
                                                                           date=day,
                                                                           timezone=timezone_str))
-
+        # Convert from cosine(SZA) [RAD] to SZA [deg]
         zenith_angle = np.degrees(np.arccos(day_series))
-
         zenith_angle.index = df.index
+
+        # Inversion of Penman-Monteith model to calculate canopy conductance g_c
         try:
             gc = pm_inverted(T=evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]), p=df["sp"], ta=df["t2m"],
                              VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
@@ -248,11 +257,15 @@ if __name__ == "__main__":
 
         except KeyError:
             continue
+
+        # Inversion of Priestley-Taylor model to calculate PT-coefficent alpha
         try:
             alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
                                 T=evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]))
         except KeyError:
             continue
+
+        # Name generated data from inverted models and combine with original data frame
         alpha = alpha.rename("alpha")
         gc = gc.rename("gc")
         df = pd.concat([df, gc], axis=1)
@@ -261,14 +274,16 @@ if __name__ == "__main__":
         #df["gc"].loc[df["ssr"] < 50] = np.nan
 
         df = pd.concat([df, alpha], axis=1)
-        #df["alpha"].replace([np.inf, -np.inf], np.nan, inplace=True)
+        df["alpha"].replace([np.inf, -np.inf], np.nan, inplace=True)
         #print(df["alpha"].max())
-        #df = df[evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) < df["ssr"]]
-        #df = df[(evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) / df["ssr"]) < 1]
+        df["alpha"].loc[df["alpha"] < 0] = np.nan
+        df = df[evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) < df["ssr"]]
+        df = df[(evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) / df["ssr"]) < 1]
+        df = df.loc[zscore(df.alpha, nan_policy="omit") < 3]
         #df = df[(np.abs(zscore(df["alpha"], nan_policy="omit")) < 1)]
         #df["alpha"].loc[df["ssr"] < 50] = np.nan
         #df["alpha"].loc[df["LAI"] < 0.2] = np.nan
         #df["alpha"].loc[df["alpha"] < 0] = np.nan
         #print(df["alpha"].max())
         #print("\n")
-        df.to_csv(f"/home/hannemam/Projects/ml-trans/data/alpha/{site}.csv")
+        df.to_csv(f"/home/hannemam/Projects/ml-trans/data/param/{site}.csv")
