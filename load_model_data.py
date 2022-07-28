@@ -1,3 +1,10 @@
+"""
+load_model_data.py
+~~~~~~~~~~~~~~~~~~
+This module contains the data reading and preprocessing steps. It is imported by nn.py and handles loading, filtering,
+transforming and storing input and output data.
+"""
+
 import os
 import glob
 
@@ -11,6 +18,7 @@ from sklearn.pipeline import Pipeline
 # todo: filter out negative transpiration and nightime values
 # todo: add doy as columns for split data so that the doy is known after scaling
 # todo: check sklearn.preprocessing.RobustScaler for outlier detection
+# filter out night time values before
 
 
 def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
@@ -48,7 +56,7 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
         try:
             igbp = data[sitename]["IGBP"].iloc[0]
         except IndexError:
-            print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP/canopy height.")
+            print(f"WARNING: {sitename} contains empty dataframe or is missing variable.")
             del data[sitename]
             continue
 
@@ -107,7 +115,7 @@ def filter_data(data: pd.DataFrame) -> pd.DataFrame:
     """
     data = data.loc[data["vpd"] > 0]
     data = data.loc[data["ssr"] > 50]
-    data = data.loc[data["tr"] > 0.01]
+    #data = data.loc[data["alpha"] > 50]
     return data.reset_index(drop=True)
 
 
@@ -251,9 +259,9 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     # Filter data by PFT and time period
     filtered_data = {}
     for sitename, df in ext_data.items():
-        if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF', 'WSA', 'SAV', 'MF', 'DNF']:
+        if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF',  'SAV', 'MF', 'DNF']:
             # 2002-07-04: Start of MODIS data
-            filtered_data[sitename] = df["2002-07-04": "2007-12-31"]
+            filtered_data[sitename] = df["2002-07-04": "2015-12-31"]
         else:
             continue
     return filtered_data
@@ -302,7 +310,7 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, target="tran
     # Convert dictionary of sites to single dataframe. Geographic information will be lost from here.
     sfn_data = dict_to_df(sfn_data)
     # Filter out data (e.g. T < 0 mm, net radiation < 50 W/m2)
-    # sfn_data = filter_data(sfn_data)
+    #sfn_data = filter_data(sfn_data)
 
     # Shuffle data randomly and split into training, testing, validation. Temporal information will be lost from here.
     x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data, target=target)

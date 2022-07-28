@@ -1,3 +1,9 @@
+"""
+plotting.py
+~~~~~~~~~~~
+Implementation of a scatter density plot for model training evaluation.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
@@ -12,6 +18,7 @@ def scatter_density_plot(df_train, df_test, df_val, title, density=True, upper_l
     :param df_test: Testing data with true and predicted transpiration
     :param df_val: Validatio ndata with true and predicted transpiration
     :param title: Title of the scatter plot
+    :param density: If True, points will be colored based on density estimated by KDE
     :param upper_lim: Upper limit of X/Y axes.
     """
 
