@@ -33,6 +33,7 @@ import metrics
 #  the top 80 cm of the soil profile, instead, water uptake has occurred
 #  from depths of up to 3 m.
 
+
 def predictions_to_dataframe(y_true: np.ndarray, y_pred: np.ndarray) -> pd.DataFrame:
     """Helper function that builds data frame out of two arrays.
 
@@ -40,18 +41,25 @@ def predictions_to_dataframe(y_true: np.ndarray, y_pred: np.ndarray) -> pd.DataF
     :param y_pred: numpy array with predicted data
     :return: pandas data frame without NaN data
     """
-    df = pd.DataFrame(np.concatenate((y_true, y_pred), axis=1), columns=["y_true", "y_pred"])
-    df = df.dropna(axis=0, how='any')
+    df = pd.DataFrame(
+        np.concatenate((y_true, y_pred), axis=1), columns=["y_true", "y_pred"]
+    )
+    df = df.dropna(axis=0, how="any")
     return df
 
 
 def calculate_aic(n, mse, n_params):
-    aic = n * np.log(mse/n) + 2 * n_params
+    aic = n * np.log(mse / n) + 2 * n_params
     return aic
 
 
-def initialize_model(inp_shape: int = 11, activation: str = 'relu', n_layers: int = 2, n_neurons: int = 32,
-                     dropout: Union[bool, float] = False) -> tf.keras.Model():
+def initialize_model(
+    inp_shape: int = 11,
+    activation: str = "relu",
+    n_layers: int = 2,
+    n_neurons: int = 32,
+    dropout: Union[bool, float] = False,
+) -> tf.keras.Model():
     """Creates a sequential model with tf.keras for regression problems.
 
     :param inp_shape: Input shape of the input feature data. Equal to number of dataframe columns
@@ -72,7 +80,8 @@ def initialize_model(inp_shape: int = 11, activation: str = 'relu', n_layers: in
     return model_instance
 
 
-def predict(trained_model: tf.keras.Model(), x: np.ndarray, y: Union[None, np.ndarray]) -> np.ndarray:
+def predict(
+    trained_model: tf.keras.Model(), x: np.ndarray, y: Union[None, np.ndarray]) -> np.ndarray:
     """Uses trained model to make predictions based on input feature data and creates data frame with true values for
     comparison.
 
@@ -85,7 +94,8 @@ def predict(trained_model: tf.keras.Model(), x: np.ndarray, y: Union[None, np.nd
     return predictions_to_dataframe(y, pred) if y is not None else pred
 
 
-def predict_fluxnet(trained_model: tf.keras.Model(), target_var: str = "transpiration", freq: str = "1D") -> None:
+def predict_fluxnet(
+    trained_model: tf.keras.Model(), target_var: str = "transpiration", freq: str = "1D") -> None:
     """Uses trained model to predict T at FLUXNET sites.
 
     :param trained_model: Compiled tf.keras model
@@ -94,7 +104,7 @@ def predict_fluxnet(trained_model: tf.keras.Model(), target_var: str = "transpir
     """
 
     # create empty dataframe for predictions period
-    idx = pd.date_range('2002-07-04', '2015-12-31 22:00:00', freq=freq)
+    idx = pd.date_range("2002-07-04", "2015-12-31 22:00:00", freq=freq)
     predictions_all_stations = pd.DataFrame(index=idx)
     alpha_all_stations = pd.DataFrame(index=idx)
 
@@ -124,39 +134,63 @@ def predict_fluxnet(trained_model: tf.keras.Model(), target_var: str = "transpir
         # If target is canopy conductance, apply Penman-Monteith equation on predictions
         if target_var == "gc":
             df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
-            df = df['2002-07-04': '2015-12-31 22:00:00'].resample(freq).mean()
+            df = df["2002-07-04":"2015-12-31 22:00:00"].resample(freq).mean()
             gc = series.copy()
             gc.index = df.index
             series = phys_model.latent_heat_to_evaporation(
-                phys_model.pm_standard(gc=gc, p=df["sp"], ta=df["t2m"], VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
-                                       SZA=0, u=df["height"], h=df["height"], z=df["height"]), df["t2m"])
+                phys_model.pm_standard(
+                    gc=gc,
+                    p=df["sp"],
+                    ta=df["t2m"],
+                    VPD=df["vpd"],
+                    netrad=df["ssr"],
+                    LAI=df["LAI"],
+                    SZA=0,
+                    u=df["height"],
+                    h=df["height"],
+                    z=df["height"],
+                ),
+                df["t2m"],
+            )
             series.index = idx
-            predictions_all_stations = pd.concat([predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
-                                                 axis=1)
+            predictions_all_stations = pd.concat(
+                [predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
+                axis=1,
+            )
         # If target is alpha, apply Priestly-Taylor equation
         elif target_var == "alpha":
 
             df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
-            df = df['2002-07-04': '2015-12-31 22:00:00'].resample(freq).mean()
+            df = df["2002-07-04":"2015-12-31 22:00:00"].resample(freq).mean()
             alpha = series.copy()
             alpha.index = df.index
             series = phys_model.latent_heat_to_evaporation(
-                phys_model.pt_standard(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"],
-                                       SZA=0, alpha_c=alpha), ta=df["t2m"], scale=freq)
+                phys_model.pt_standard(
+                    ta=df["t2m"],
+                    p=df["sp"],
+                    netrad=df["ssr"],
+                    LAI=df["LAI"],
+                    SZA=0,
+                    alpha_c=alpha,
+                ),
+                ta=df["t2m"],
+                scale=freq,
+            )
             series.index = idx
-            predictions_all_stations = pd.concat([predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
-                                                 axis=1)
+            predictions_all_stations = pd.concat(
+                [predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
+                axis=1,)
         # Append FLUXNET prediction to data frame
 
         # alpha_all_stations = pd.concat([alpha_all_stations, alpha.rename(os.path.basename(file)[:-4])],
         #                                     axis=1)
         series.plot(lw=0.3)
-        plt.savefig(f'output/fluxnet_predictions/fig/{os.path.basename(file)[:-4]}')
+        plt.savefig(f"output/fluxnet_predictions/fig/{os.path.basename(file)[:-4]}")
         plt.clf()
 
     # Write out CSV with all FLUXNET predictions
-    predictions_all_stations.to_csv(f'output/fluxnet_predictions/{model_time}-flx_predictions_{target_var}.csv')
-    alpha_all_stations.to_csv(f'output/fluxnet_predictions/{model_time}-flx_coefficients_{target_var}.csv')
+    predictions_all_stations.to_csv(f"output/fluxnet_predictions/{model_time}-flx_predictions_{target_var}.csv")
+    alpha_all_stations.to_csv(f"output/fluxnet_predictions/{model_time}-flx_coefficients_{target_var}.csv")
 
 
 if __name__ == "__main__":
@@ -165,8 +199,8 @@ if __name__ == "__main__":
     # parser.parse_args()
 
     # read configuration file
-    cp = configparser.ConfigParser(delimiters='=', converters={'list': lambda x: [i.strip() for i in x.split(',')]})
-    cp.read('config/config.ini')
+    cp = configparser.ConfigParser(delimiters="=", converters={"list": lambda x: [i.strip() for i in x.split(",")]})
+    cp.read("config/config.ini")
 
     # paths
     inp_path = cp["PATHS"]["training_data"]
@@ -193,39 +227,46 @@ if __name__ == "__main__":
     # Retrain model if retrain is enabled
     if retrain:
         # load model data and create sequential model
-        train_data, metadata = load_model_data.load(path_csv=inp_path, freq=frequency, features=features,
-                                                    blacklist=whitelist, target=target,
-                                                    external_prediction=ext_path)
+        train_data, metadata = load_model_data.load(
+            path_csv=inp_path,
+            freq=frequency,
+            features=features,
+            blacklist=whitelist,
+            target=target,
+            external_prediction=ext_path,)
 
         # Create sequential model from settings
         input_shape = train_data["Xtrain"].shape[1]
-        model = initialize_model(inp_shape=input_shape,
-                                 activation=act_fn,
-                                 n_layers=layers,
-                                 n_neurons=neurons,
-                                 dropout=dropout_rate)
+        model = initialize_model(
+            inp_shape=input_shape,
+            activation=act_fn,
+            n_layers=layers,
+            n_neurons=neurons,
+            dropout=dropout_rate,)
 
         # Callbacks
         # Early Stopping if validation loss doesn't change within specified number of epochs
-        es_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
-                                                       patience=early_stopping_epochs)
+        es_callback = tf.keras.callbacks.EarlyStopping(
+            monitor="val_loss", patience=early_stopping_epochs)
 
         # Store model training checkpoints
         model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")
         checkpoint_path = f"checkpoint/{model_time}/cp.ckpt"
-        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                                         save_weights_only=True,
-                                                         verbose=1)
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_path, save_weights_only=True, verbose=1)
 
         # train model
-        model.fit(train_data["Xtrain"], train_data["Ytrain"],
-                  epochs=5000,
-                  batch_size=1000,
-                  callbacks=[es_callback, cp_callback],
-                  validation_data=(train_data["Xtest"], train_data["Ytest"]))
+        model.fit(
+            train_data["Xtrain"],
+            train_data["Ytrain"],
+            epochs=5000,
+            batch_size=1000,
+            callbacks=[es_callback, cp_callback],
+            validation_data=(train_data["Xtest"], train_data["Ytest"]),)
 
         # aic
-        n_params = sum(tf.keras.backend.count_params(x) for x in model.trainable_weights)
+        n_params = sum(
+            tf.keras.backend.count_params(x) for x in model.trainable_weights)
         loss = model.history.history["loss"][-1]
         n = len(train_data["Ytrain"])
         aic = calculate_aic(n=n, mse=loss, n_params=n_params)
@@ -244,11 +285,14 @@ if __name__ == "__main__":
 
         # axes scale, depends on target
         upper_lim = 20  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
-        plotting.scatter_density_plot(df_train, df_test, df_val,
-                                      title=f"Target: {target}, {layers} Layers, {neurons} Neurons, "
-                                            f"Dropout: {dropout_rate}",
-                                      density=True,
-                                      upper_lim=upper_lim)
+        plotting.scatter_density_plot(
+            df_train,
+            df_test,
+            df_val,
+            title=f"Target: {target}, {layers} Layers, {neurons} Neurons, "
+            f"Dropout: {dropout_rate}",
+            density=True,
+            upper_lim=upper_lim,)
 
         # set model metadata
         metadata["model"]["layers"] = layers
@@ -258,20 +302,26 @@ if __name__ == "__main__":
         metadata["model"]["early_stopping"] = early_stopping_epochs
 
         # calculate performance metrics for prediction on training data
-        _, m1, b1 = metrics.linear_fit(df_train["y_true"], df_train["y_pred"], upper_lim=upper_lim)
-        metadata["results"]["training"] = {"MAE": metrics.mae(df_train["y_true"], df_train["y_pred"]),
-                                           "corr": metrics.r2(df_train["y_true"], df_train["y_pred"]),
-                                           "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'"}
+        _, m1, b1 = metrics.linear_fit(
+            df_train["y_true"], df_train["y_pred"], upper_lim=upper_lim)
+        metadata["results"]["training"] = {
+            "MAE": metrics.mae(df_train["y_true"], df_train["y_pred"]),
+            "corr": metrics.r2(df_train["y_true"], df_train["y_pred"]),
+            "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'", }
 
-        _, m2, b12 = metrics.linear_fit(df_test["y_true"], df_test["y_pred"], upper_lim=upper_lim)
-        metadata["results"]["testing"] = {"MAE": metrics.mae(df_test["y_true"], df_test["y_pred"]),
-                                          "corr": metrics.r2(df_test["y_true"], df_test["y_pred"]),
-                                          "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'"}
+        _, m2, b12 = metrics.linear_fit(
+            df_test["y_true"], df_test["y_pred"], upper_lim=upper_lim)
+        metadata["results"]["testing"] = {
+            "MAE": metrics.mae(df_test["y_true"], df_test["y_pred"]),
+            "corr": metrics.r2(df_test["y_true"], df_test["y_pred"]),
+            "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'", }
 
-        _, m3, b3 = metrics.linear_fit(df_val["y_true"], df_val["y_pred"], upper_lim=upper_lim)
-        metadata["results"]["validation"] = {"MAE": metrics.mae(df_val["y_true"], df_val["y_pred"]),
-                                             "corr": metrics.r2(df_val["y_true"], df_val["y_pred"]),
-                                             "fit": f"y = {round(m3, 2)}x + {round(b3, 2)}'"}
+        _, m3, b3 = metrics.linear_fit(
+            df_val["y_true"], df_val["y_pred"], upper_lim=upper_lim)
+        metadata["results"]["validation"] = {
+            "MAE": metrics.mae(df_val["y_true"], df_val["y_pred"]),
+            "corr": metrics.r2(df_val["y_true"], df_val["y_pred"]),
+            "fit": f"y = {round(m3, 2)}x + {round(b3, 2)}'", }
 
         metadata["results"]["cpk_path"] = f"checkpoint/{model_time}/"
 
@@ -284,6 +334,4 @@ if __name__ == "__main__":
 
     # Use model to predict T at FLUXNET sites
     if ext_path:
-        predict_fluxnet(model,
-                        target_var=target,
-                        freq=frequency)
+        predict_fluxnet(model, target_var=target, freq=frequency)

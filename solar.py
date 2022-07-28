@@ -3,7 +3,6 @@ solar.py
 ~~~~~~~~~~~~~
 This module introduces a class for solar calculations aiming at calculating the solar zenith angle (SZA).
 """
-import time
 
 import numpy as np
 import pandas as pd
@@ -33,7 +32,6 @@ class Location:
         :param lon: Longitude [degrees] of location, negative for East, positive for West
         :param date: naive timestamp for a date
         """
-
         # Latitude, Longitude [deg] and date [pd.Timestamp]
         self.lat = lat
         self.lon = lon
@@ -65,7 +63,6 @@ class Location:
 
     def compute(self):
         """Public method coupling the calculations to derive Sun Zenith Angle (SZA)"""
-
         self.calc_day_angle()
         self.solar_declination()
         self.equation_of_time()

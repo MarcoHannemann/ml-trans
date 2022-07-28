@@ -269,21 +269,12 @@ if __name__ == "__main__":
         alpha = alpha.rename("alpha")
         gc = gc.rename("gc")
         df = pd.concat([df, gc], axis=1)
-        #df["gc"].loc[df["gc"] < 0.01] = 0
-        #df["gc"].loc[df["gc"] > 75] = np.nan
-        #df["gc"].loc[df["ssr"] < 50] = np.nan
 
         df = pd.concat([df, alpha], axis=1)
         df["alpha"].replace([np.inf, -np.inf], np.nan, inplace=True)
-        #print(df["alpha"].max())
         df["alpha"].loc[df["alpha"] < 0] = np.nan
         df = df[evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) < df["ssr"]]
         df = df[(evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) / df["ssr"]) < 1]
-        df = df.loc[zscore(df.alpha, nan_policy="omit") < 3]
-        #df = df[(np.abs(zscore(df["alpha"], nan_policy="omit")) < 1)]
-        #df["alpha"].loc[df["ssr"] < 50] = np.nan
-        #df["alpha"].loc[df["LAI"] < 0.2] = np.nan
-        #df["alpha"].loc[df["alpha"] < 0] = np.nan
-        #print(df["alpha"].max())
-        #print("\n")
+        df = df.loc[np.abs(zscore(df.alpha, nan_policy="omit") < 3)]
+
         df.to_csv(f"/home/hannemam/Projects/ml-trans/data/param/{site}.csv")
