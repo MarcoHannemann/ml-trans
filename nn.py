@@ -250,7 +250,7 @@ if __name__ == "__main__":
             monitor="val_loss", patience=early_stopping_epochs)
 
         # Store model training checkpoints
-        model_time = datetime.now().strftime("%Y%m%d_%H:%M:%S")
+        model_time = datetime.now().strftime("%Y%m%d_%H%M%S")
         checkpoint_path = f"checkpoint/{model_time}/cp.ckpt"
         cp_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path, save_weights_only=True, verbose=1)
