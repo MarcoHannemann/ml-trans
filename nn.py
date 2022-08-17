@@ -18,9 +18,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from timezonefinder import TimezoneFinder
 
 import load_model_data
 import phys_model
+import solar
 import plotting
 import metrics
 
@@ -54,11 +56,11 @@ def calculate_aic(n, mse, n_params):
 
 
 def initialize_model(
-    inp_shape: int = 11,
-    activation: str = "relu",
-    n_layers: int = 2,
-    n_neurons: int = 32,
-    dropout: Union[bool, float] = False,
+        inp_shape: int = 11,
+        activation: str = "relu",
+        n_layers: int = 2,
+        n_neurons: int = 32,
+        dropout: Union[bool, float] = False,
 ) -> tf.keras.Model():
     """Creates a sequential model with tf.keras for regression problems.
 
@@ -81,7 +83,7 @@ def initialize_model(
 
 
 def predict(
-    trained_model: tf.keras.Model(), x: np.ndarray, y: Union[None, np.ndarray]) -> np.ndarray:
+        trained_model: tf.keras.Model(), x: np.ndarray, y: Union[None, np.ndarray]) -> np.ndarray:
     """Uses trained model to make predictions based on input feature data and creates data frame with true values for
     comparison.
 
@@ -95,7 +97,7 @@ def predict(
 
 
 def predict_fluxnet(
-    trained_model: tf.keras.Model(), target_var: str = "transpiration", freq: str = "1D") -> None:
+        trained_model: tf.keras.Model(), target_var: str = "transpiration", freq: str = "1D") -> None:
     """Uses trained model to predict T at FLUXNET sites.
 
     :param trained_model: Compiled tf.keras model
@@ -162,6 +164,24 @@ def predict_fluxnet(
 
             df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
             df = df["2002-07-04":"2015-12-31 22:00:00"].resample(freq).mean()
+
+            fluxnet_meta = pd.read_csv("site_meta.csv", index_col=0)
+            # Get latlon coordinates for site
+            latitude = fluxnet_meta[fluxnet_meta.index == sitename]["lat"].item()
+            longitude = fluxnet_meta[fluxnet_meta.index == sitename]["lon"].item()
+
+            # Identify timezone string for the site for date localization in solar.py (e.g. Europe/Berlin)
+            timezone_str = TimezoneFinder().timezone_at(lng=longitude, lat=latitude)
+            # Apply daily SZA averaging
+            day_series = pd.Series(df.index)
+            day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude,
+                                                                              lon=longitude,
+                                                                              date=day,
+                                                                              timezone=timezone_str))
+            # Convert from cosine(SZA) [RAD] to SZA [deg]
+            sza = np.degrees(np.arccos(day_series))
+            sza.index = df.index
+
             alpha = series.copy()
             alpha.index = df.index
             series = phys_model.latent_heat_to_evaporation(
@@ -170,20 +190,26 @@ def predict_fluxnet(
                     p=df["sp"],
                     netrad=df["ssr"],
                     LAI=df["LAI"],
-                    SZA=0,
+                    SZA=sza,
                     alpha_c=alpha,
                 ),
                 ta=df["t2m"],
                 scale=freq,
             )
             series.index = idx
+            # Calculate available energy (r_nc) in the canopy and set T = 0 if r_nc < 0
+            r_nc = phys_model.net_radiation_canopy(netrad=df["ssr"], LAI=df["LAI"], SZA=sza)
+            series.loc[(r_nc < 0)] = 0
+            alpha.loc[(r_nc < 0)] = np.nan
+
+            # Add site prediction to dataframe
             predictions_all_stations = pd.concat(
                 [predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
-                axis=1,)
-        # Append FLUXNET prediction to data frame
+                axis=1, )
 
-        # alpha_all_stations = pd.concat([alpha_all_stations, alpha.rename(os.path.basename(file)[:-4])],
-        #                                     axis=1)
+        # Append PT-coefficient prediction to data frame
+        alpha_all_stations = pd.concat([alpha_all_stations, alpha.rename(os.path.basename(file)[:-4])],
+                                       axis=1)
         series.plot(lw=0.3)
         plt.savefig(f"output/fluxnet_predictions/fig/{os.path.basename(file)[:-4]}")
         plt.clf()
@@ -233,7 +259,7 @@ if __name__ == "__main__":
             features=features,
             blacklist=whitelist,
             target=target,
-            external_prediction=ext_path,)
+            external_prediction=ext_path, )
 
         # Create sequential model from settings
         input_shape = train_data["Xtrain"].shape[1]
@@ -242,7 +268,7 @@ if __name__ == "__main__":
             activation=act_fn,
             n_layers=layers,
             n_neurons=neurons,
-            dropout=dropout_rate,)
+            dropout=dropout_rate, )
 
         # Callbacks
         # Early Stopping if validation loss doesn't change within specified number of epochs
@@ -262,7 +288,7 @@ if __name__ == "__main__":
             epochs=5000,
             batch_size=1000,
             callbacks=[es_callback, cp_callback],
-            validation_data=(train_data["Xtest"], train_data["Ytest"]),)
+            validation_data=(train_data["Xtest"], train_data["Ytest"]), )
 
         # aic
         n_params = sum(
@@ -290,9 +316,9 @@ if __name__ == "__main__":
             df_test,
             df_val,
             title=f"Target: {target}, {layers} Layers, {neurons} Neurons, "
-            f"Dropout: {dropout_rate}",
+                  f"Dropout: {dropout_rate}",
             density=True,
-            upper_lim=upper_lim,)
+            upper_lim=upper_lim, )
 
         # set model metadata
         metadata["model"]["layers"] = layers
