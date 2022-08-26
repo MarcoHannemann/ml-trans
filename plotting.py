@@ -10,7 +10,22 @@ from scipy.stats import gaussian_kde
 import metrics
 
 
-def scatter_density_plot(df_train, df_test, df_val, title, density=True, upper_lim=10):
+def plot_learning_curves(model_history, time):
+    epochs = model_history.epoch
+    loss = model_history.history["loss"]
+    val_loss = model_history.history["val_loss"]
+
+    fig, ax = plt.subplots(dpi=300)
+    ax.plot(epochs, loss, label="Training")
+    ax.plot(epochs, val_loss, label="Testing")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
+    ax.grid()
+    ax.legend(loc="upper right")
+    plt.savefig(f"models/{time}/plots/training_evo.png", dpi=300)
+
+
+def scatter_density_plot(df_train, df_test, df_val, title, time, density=True, upper_lim=10):
     """Creates a scatter plot with density visualization based on Gaussian KDE for training, testing and validation
     data of the neural network.
 
@@ -33,7 +48,7 @@ def scatter_density_plot(df_train, df_test, df_val, title, density=True, upper_l
         z_val = gaussian_kde(xy_val)(xy_val)
     else:
         z_training = z_test = z_val = None
-    fig, ax = plt.subplots(1, 3, figsize=(16, 8), sharex=True, sharey=True)
+    fig, ax = plt.subplots(1, 3, figsize=(16, 8), sharex=True, sharey=True, dpi=300)
     cax1 = ax[0].scatter(df_train['y_true'], df_train['y_pred'], c=z_training, s=0.7)
     cax2 = ax[1].scatter(df_test['y_true'], df_test['y_pred'], c=z_test, s=0.7)
     cax3 = ax[2].scatter(df_val['y_true'], df_val['y_pred'], c=z_val, s=0.7)
@@ -93,4 +108,4 @@ def scatter_density_plot(df_train, df_test, df_val, title, density=True, upper_l
     # colorbar based on probability distribution function
     # fig.colorbar(cax1)
     fig.suptitle(title)
-    plt.show()
+    plt.savefig(f"models/{time}/plots/sdp.png", dpi=300)

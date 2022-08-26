@@ -122,7 +122,7 @@ def predict_fluxnet(
         try:
             result = predict(trained_model, arr, y=None)
         except ValueError:
-            print(f"IBBP not valid for {sitename}")
+            print(f"IGBP not valid for {sitename}")
             continue
         series = pd.Series(result.flatten())
 
@@ -165,8 +165,7 @@ def predict_fluxnet(
             df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
             df = df["2002-07-04":"2015-12-31 22:00:00"].resample(freq).mean()
 
-            fluxnet_meta = pd.read_csv("site_meta.csv", index_col=0)
-            # Get latlon coordinates for site
+            fluxnet_meta = pd.read_csv("FLX-site_info.csv", index_col=0, sep=";")            # Get latlon coordinates for site
             latitude = fluxnet_meta[fluxnet_meta.index == sitename]["lat"].item()
             longitude = fluxnet_meta[fluxnet_meta.index == sitename]["lon"].item()
 
@@ -223,7 +222,7 @@ if __name__ == "__main__":
     # parser = argparse.ArgumentParser()
     # parser.add_argument("tank", type=str)
     # parser.parse_args()
-
+    model_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     # read configuration file
     cp = configparser.ConfigParser(delimiters="=", converters={"list": lambda x: [i.strip() for i in x.split(",")]})
     cp.read("config/config.ini")
@@ -250,6 +249,9 @@ if __name__ == "__main__":
     early_stopping_epochs = cp.getint("MODEL.ARCHITECTURE", "early_stopping_epochs")
     act_fn = cp["MODEL.ARCHITECTURE"]["activation_fn"]
 
+    # misc configs
+    external_prediction = cp.getboolean("OTHER", "predict_fluxnet")
+
     # Retrain model if retrain is enabled
     if retrain:
         # load model data and create sequential model
@@ -257,9 +259,11 @@ if __name__ == "__main__":
             path_csv=inp_path,
             freq=frequency,
             features=features,
+            timestamp=model_time,
             blacklist=whitelist,
             target=target,
-            external_prediction=ext_path, )
+            external_prediction=ext_path,
+        )
 
         # Create sequential model from settings
         input_shape = train_data["Xtrain"].shape[1]
@@ -276,7 +280,7 @@ if __name__ == "__main__":
             monitor="val_loss", patience=early_stopping_epochs)
 
         # Store model training checkpoints
-        model_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+
         checkpoint_path = f"checkpoint/{model_time}/cp.ckpt"
         cp_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path, save_weights_only=True, verbose=1)
@@ -289,7 +293,7 @@ if __name__ == "__main__":
             batch_size=1000,
             callbacks=[es_callback, cp_callback],
             validation_data=(train_data["Xtest"], train_data["Ytest"]), )
-
+        model_history = model.history
         # aic
         n_params = sum(
             tf.keras.backend.count_params(x) for x in model.trainable_weights)
@@ -299,15 +303,24 @@ if __name__ == "__main__":
         print(aic)
 
         # Save trained model to disk
-        model.save(f"models/{model_time}")
+        model.save(f"models/{model_time}/model")
 
         # apply trained model on training data
         df_train = predict(model, train_data["Xtrain"], train_data["Ytrain"])
         df_test = predict(model, train_data["Xtest"], train_data["Ytest"])
         df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
-        # visualize model results in a scatter plot for training, testing, validation
-        # Density should be disabled for hourly resolution, since KDE needs too much computation power
+        try:
+            os.mkdir(f"models/{model_time}")
+        except FileExistsError:
+            pass
+        try:
+            os.mkdir(f"models/{model_time}/plots")
+        except FileExistsError:
+            pass
+
+        # visualize model training results
+        # Scatter density plot. Density should be disabled for hourly resolution, KDE needs too much computation power
 
         # axes scale, depends on target
         upper_lim = 20  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
@@ -317,8 +330,14 @@ if __name__ == "__main__":
             df_val,
             title=f"Target: {target}, {layers} Layers, {neurons} Neurons, "
                   f"Dropout: {dropout_rate}",
+            time=model_time,
             density=True,
-            upper_lim=upper_lim, )
+            upper_lim=upper_lim,
+
+        )
+
+        # training evolution plot
+        plotting.plot_learning_curves(model_history, time=model_time)
 
         # set model metadata
         metadata["model"]["layers"] = layers
@@ -352,12 +371,12 @@ if __name__ == "__main__":
         metadata["results"]["cpk_path"] = f"checkpoint/{model_time}/"
 
         # write metadata to JSON
-        with open(f"models/{model_time}.json", "w") as fp:
+        with open(f"models/{model_time}/metadata.json", "w") as fp:
             json.dump(metadata, fp, indent=1)
     else:
         # load pretrained model
         model = tf.keras.models.load_model(cp["PATHS"]["saved_model"])
 
     # Use model to predict T at FLUXNET sites
-    if ext_path:
+    if external_prediction:
         predict_fluxnet(model, target_var=target, freq=frequency)

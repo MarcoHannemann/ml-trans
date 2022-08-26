@@ -7,6 +7,7 @@ transforming and storing input and output data.
 
 import os
 import glob
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -150,7 +151,7 @@ def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> t
 
 def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
                    y_train: np.array, y_test: np.array, y_val: np.array,
-                   features: list, ext_prediction: str = None, freq: str = "1D") -> dict:
+                   features: list, timestamp: str, ext_prediction: str = None, freq: str = "1D") -> dict:
     """Transforms and fits data. Includes normalization and encoding.
 
     :param ext_prediction: If path is specified, external locations are transformed for predictions
@@ -161,6 +162,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     :param y_test: Testing target
     :param y_val: Validation target
     :param features: List of feature names incoroporated in model
+    :param timestamp: Date and Time of model run
     :param ext_prediction: Path to directory with external sites (CSV)
     :param freq: Temporal resolution 1D | 1H
     :return: dictionary containing transformed training data and untransformed samples
@@ -182,6 +184,10 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
         ('num', num_pipeline, num_attributes),
         ('cat', OneHotEncoder(), cat_attributes)
     ])
+
+    # Store transformation pipeline to disk
+    with open(f"models/{timestamp}/pipeline.pickle", "wb") as output_file:
+        pickle.dump(full_pipeline, output_file)
 
     # apply pipeline, fit only to training data
     df_train = full_pipeline.fit_transform(x_train)
@@ -237,7 +243,7 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
         ext_data[sitename] = pd.read_csv(csv_file, index_col=0, parse_dates=True)
 
         try:
-            igbp = ext_data[sitename]["IGBP"].iloc[0]
+            igbp = ext_data[sitename]["IGBP"].dropna().iloc[0]
         except IndexError:
             print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP.")
             del ext_data[sitename]
@@ -267,14 +273,15 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     return filtered_data
 
 
-def load(path_csv: str, freq: str, features: list, blacklist=False, target="transpiration",
-         external_prediction: str = None) -> tuple:
+def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist=False, target="transpiration",
+         external_prediction: str = None, ) -> tuple:
     """Loads the data from passed path and does preprocessing for the neural network.
 
     :param external_prediction: If path is specified, external locations are transformed for prediction
     :param path_csv: Directory containing CSV for point locaions
     :param freq: Temporal resolution. Currently only "1D" supported
     :param features: List with input variables to be used
+    :param timestamp: Date and Time of model run
     :param blacklist: If True, sites specified in metadata are removed
     :param target: Name of target variable (transpiration|gc|alpha)
     :return train_data: Dictionary with preprocessed training data
@@ -317,5 +324,5 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, target="tran
 
     # Scale and encode data for neural network
     train_data = transform_data(x_train, x_test, x_val, y_train, y_test, y_val,
-                                features, ext_prediction=external_prediction, freq=freq)
+                                features, timestamp=timestamp, ext_prediction=external_prediction, freq=freq)
     return train_data, metadata
