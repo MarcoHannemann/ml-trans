@@ -1,3 +1,9 @@
+"""
+metrics.py
+~~~~~~~~~~~~~~~~~~
+This module contains functions for calculating basic metrics that can be wrapped around the model output.
+"""
+
 import numpy as np
 from sklearn.metrics import mean_absolute_error, r2_score
 from scipy.stats import linregress

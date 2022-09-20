@@ -9,6 +9,7 @@ workflow steps: Loading -> Preprocessing -> Training -> Prediction -> Model eval
 
 import os
 import glob
+import pickle
 from datetime import datetime
 import json
 from typing import Union
@@ -62,12 +63,13 @@ def initialize_model(
         n_neurons: int = 32,
         dropout: Union[bool, float] = False,
 ) -> tf.keras.Model():
-    """Creates a sequential model with tf.keras for regression problems.
+    """Creates a sequential model with tf.keras for regression problems. The parameters should be set in
+    config/config.ini.
 
     :param inp_shape: Input shape of the input feature data. Equal to number of dataframe columns
     :param activation: Type of activation function
     :param n_layers: Number of hidden layers to be generated
-    :param n_neurons: Numer of neurons per hidden layer contains
+    :param n_neurons: Number of neurons per hidden layer
     :param dropout: False or dropout rate
     :return: Compiled model ready to be fitted to training data
     """
@@ -110,7 +112,7 @@ def predict_fluxnet(
     predictions_all_stations = pd.DataFrame(index=idx)
     alpha_all_stations = pd.DataFrame(index=idx)
 
-    # get files for transformed input data
+    # read transformed input data at FLUXNET sites
     files = sorted(glob.glob("output/fluxnet/*csv"))
     sitenames = [os.path.basename(file)[:-4] for file in files]
     for sitename, file in zip(sitenames, files):
@@ -159,18 +161,21 @@ def predict_fluxnet(
                 [predictions_all_stations, series.rename(os.path.basename(file)[:-4])],
                 axis=1,
             )
-        # If target is alpha, apply Priestly-Taylor equation
+        # If target is alpha, apply Priestley-Taylor equation
         elif target_var == "alpha":
 
-            df = pd.read_csv(f"data/fluxnet_hourly/{sitename}.csv", index_col=0, parse_dates=True)
+            # read hourly input data for FLUXNET sites and resample to set frequency
+            df = pd.read_csv(f"{ext_path}{sitename}.csv", index_col=0, parse_dates=True)
             df = df["2002-07-04":"2015-12-31 22:00:00"].resample(freq).mean()
 
-            fluxnet_meta = pd.read_csv("FLX-site_info.csv", index_col=0, sep=";")            # Get latlon coordinates for site
+            # Get latitude and longitude coordinates for site for calculation of sun zenith angle (SZA)
+            fluxnet_meta = pd.read_csv("FLX-site_info.csv", index_col=0, sep=";")
             latitude = fluxnet_meta[fluxnet_meta.index == sitename]["lat"].item()
             longitude = fluxnet_meta[fluxnet_meta.index == sitename]["lon"].item()
 
             # Identify timezone string for the site for date localization in solar.py (e.g. Europe/Berlin)
             timezone_str = TimezoneFinder().timezone_at(lng=longitude, lat=latitude)
+
             # Apply daily SZA averaging
             day_series = pd.Series(df.index)
             day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude,
@@ -181,6 +186,7 @@ def predict_fluxnet(
             sza = np.degrees(np.arccos(day_series))
             sza.index = df.index
 
+            # Apply PT model on predicted alpha coefficients
             alpha = series.copy()
             alpha.index = df.index
             series = phys_model.latent_heat_to_evaporation(
@@ -196,6 +202,7 @@ def predict_fluxnet(
                 scale=freq,
             )
             series.index = idx
+
             # Calculate available energy (r_nc) in the canopy and set T = 0 if r_nc < 0
             r_nc = phys_model.net_radiation_canopy(netrad=df["ssr"], LAI=df["LAI"], SZA=sza)
             series.loc[(r_nc < 0)] = 0
@@ -213,16 +220,19 @@ def predict_fluxnet(
         plt.savefig(f"output/fluxnet_predictions/fig/{os.path.basename(file)[:-4]}")
         plt.clf()
 
-    # Write out CSV with all FLUXNET predictions
+    # Write out CSV with all FLUXNET predictions (Transpiration & coefficients)
     predictions_all_stations.to_csv(f"output/fluxnet_predictions/{model_time}-flx_predictions_{target_var}.csv")
     alpha_all_stations.to_csv(f"output/fluxnet_predictions/{model_time}-flx_coefficients_{target_var}.csv")
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("tank", type=str)
-    # parser.parse_args()
+    # Get current timestamp of model execution and create folder for model outputs
     model_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    try:
+        os.mkdir(f"models/{model_time}/")
+    except FileExistsError:
+        pass
+
     # read configuration file
     cp = configparser.ConfigParser(delimiters="=", converters={"list": lambda x: [i.strip() for i in x.split(",")]})
     cp.read("config/config.ini")
@@ -277,7 +287,11 @@ if __name__ == "__main__":
         # Callbacks
         # Early Stopping if validation loss doesn't change within specified number of epochs
         es_callback = tf.keras.callbacks.EarlyStopping(
-            monitor="val_loss", patience=early_stopping_epochs)
+            monitor="val_loss",
+            patience=early_stopping_epochs,
+            verbose=1,
+#            min_delta=0.01
+        )
 
         # Store model training checkpoints
 
@@ -375,8 +389,14 @@ if __name__ == "__main__":
             json.dump(metadata, fp, indent=1)
     else:
         # load pretrained model
-        model = tf.keras.models.load_model(cp["PATHS"]["saved_model"])
-
+        model = tf.keras.models.load_model(f'{cp["PATHS"]["saved_model"]}model/')
+        with open(f'{cp["PATHS"]["saved_model"]}pipeline.pickle', "rb") as pipeline_file:
+            pipeline = pickle.load(pipeline_file)
+        load_model_data.external_transform(features=features,
+                                           ext_prediction=ext_path,
+                                           freq=frequency,
+                                           full_pipeline=pipeline)
     # Use model to predict T at FLUXNET sites
     if external_prediction:
         predict_fluxnet(model, target_var=target, freq=frequency)
+

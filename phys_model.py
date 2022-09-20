@@ -167,7 +167,7 @@ def pm_inverted(T, p, ta, VPD, netrad, LAI, SZA, u, h, z):
     :param SZA: Sun Zenith Angle
     :param u: wind speed at height z [m/s]
     :param h: canopy height [m]
-    :param z: height of wind/relative humidty sensor [m]
+    :param z: height of wind/relative humidity sensor [m]
     :return: gc: Canopy conductance
     """
 
@@ -218,6 +218,7 @@ def pt_inverted(ta, p, netrad, LAI, SZA, T):
 
 
 if __name__ == "__main__":
+    target = "transpiration"
     # Get list of site name codes
     sites = pd.read_csv("site_meta.csv", index_col=0)
     for site in list(sites.index):
@@ -251,7 +252,7 @@ if __name__ == "__main__":
 
         # Inversion of Penman-Monteith model to calculate canopy conductance g_c
         try:
-            gc = pm_inverted(T=evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]), p=df["sp"], ta=df["t2m"],
+            gc = pm_inverted(T=evaporation_to_latent_heat(df[target], df["t2m"]), p=df["sp"], ta=df["t2m"],
                              VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
                              SZA=zenith_angle, u=df["windspeed"], h=df["height"], z=df["height"])
 
@@ -261,7 +262,7 @@ if __name__ == "__main__":
         # Inversion of Priestley-Taylor model to calculate PT-coefficent alpha
         try:
             alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
-                                T=evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]))
+                                T=evaporation_to_latent_heat(df[target], df["t2m"]))
         except KeyError:
             continue
 
@@ -273,8 +274,8 @@ if __name__ == "__main__":
         df = pd.concat([df, alpha], axis=1)
         df["alpha"].replace([np.inf, -np.inf], np.nan, inplace=True)
         df["alpha"].loc[df["alpha"] < 0] = np.nan
-        df = df[evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) < df["ssr"]]
-        df = df[(evaporation_to_latent_heat(df["transpiration_ca"], df["t2m"]) / df["ssr"]) < 1]
+        df = df[evaporation_to_latent_heat(df[target], df["t2m"]) < df["ssr"]]
+        df = df[(evaporation_to_latent_heat(df[target], df["t2m"]) / df["ssr"]) < 1]
         df = df.loc[np.abs(zscore(df.alpha, nan_policy="omit") < 3)]
 
         df.to_csv(f"/home/hannemam/Projects/ml-trans/data/param/{site}.csv")

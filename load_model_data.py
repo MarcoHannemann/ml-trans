@@ -8,9 +8,11 @@ transforming and storing input and output data.
 import os
 import glob
 import pickle
+from typing import Union
 
 import numpy as np
 import pandas as pd
+import sklearn.compose
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
@@ -163,7 +165,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     :param y_val: Validation target
     :param features: List of feature names incoroporated in model
     :param timestamp: Date and Time of model run
-    :param ext_prediction: Path to directory with external sites (CSV)
+    :param ext_prediction: Path to directory with input for sites to predict (CSV)
     :param freq: Temporal resolution 1D | 1H
     :return: dictionary containing transformed training data and untransformed samples
     """
@@ -185,14 +187,16 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
         ('cat', OneHotEncoder(), cat_attributes)
     ])
 
-    # Store transformation pipeline to disk
-    with open(f"models/{timestamp}/pipeline.pickle", "wb") as output_file:
-        pickle.dump(full_pipeline, output_file)
+
 
     # apply pipeline, fit only to training data
     df_train = full_pipeline.fit_transform(x_train)
     df_test = full_pipeline.transform(x_test)
     df_val = full_pipeline.transform(x_val)
+
+    # Store transformation pipeline to disk
+    with open(f"models/{timestamp}/pipeline.pickle", "wb") as output_file:
+        pickle.dump(full_pipeline, output_file)
 
     # Extract new feature names from OneHotEncoder().categories_ ('IGBP' -> ['DBF, 'EBF', ...])
     new_categories = full_pipeline.transformers_[1][1].categories_[0].tolist()
@@ -214,7 +218,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     y_test.to_csv('output/training/test_lables.csv', index=False)
     y_val.to_csv('output/training/val_lables.csv', index=False)
 
-    # if external prediction is activated, external input features are transformed here
+    # If model is retrained and external prediction is turned on, external input is transformed here
     if ext_prediction is not None:
         ext_data = load_external(ext_prediction, features=features, freq=freq)
         for sitename, df in ext_data.items():
@@ -227,6 +231,28 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
             "Xtest": np.array(df_test), "Ytest": np.expand_dims(np.array(y_test), axis=1),
             "Xval": np.array(df_val), "Yval": np.expand_dims(np.array(y_val), axis=1),
             "untransformed": {"Xtrain": x_train, "Xtest": x_test, "Xval": x_val}}
+
+
+def external_transform(features: list, ext_prediction: str, freq: str,
+                       full_pipeline: sklearn.compose.ColumnTransformer):
+    """Transforms external input for prediction if stored model is loaded.
+
+    :param features: List of feature names incoroporated in model
+    :param ext_prediction: Path to directory with input for sites to predict (CSV)
+    :param freq: Temporal resolution 1D | 1H
+    :param full_pipeline: Transformation pipeline fitted during model training
+    """
+    # divide input features based on scale (interval, nominal)
+    features.remove("IGBP")
+    num_attributes = features
+    new_categories = full_pipeline.transformers_[1][1].categories_[0].tolist()
+    if ext_prediction is not None:
+        ext_data = load_external(ext_prediction, features=features, freq=freq)
+        for sitename, df in ext_data.items():
+            df_transformed = df.reset_index(drop=True)
+            df_transformed = pd.DataFrame(full_pipeline.transform(df_transformed),
+                                          columns=num_attributes + new_categories)
+            df_transformed.to_csv(f"output/fluxnet/{sitename}.csv", index=False)
 
 
 def load_external(path: str, features: list, freq: str = "1D") -> dict:
@@ -273,7 +299,7 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     return filtered_data
 
 
-def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist=False, target="transpiration",
+def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Union[bool, str] = False, target="transpiration",
          external_prediction: str = None, ) -> tuple:
     """Loads the data from passed path and does preprocessing for the neural network.
 
