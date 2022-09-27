@@ -265,6 +265,7 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     ext_data = {}
     for csv_file in csv_files:
         sitename = os.path.splitext(os.path.basename(csv_file))[0]
+        # todo: DtypeWarning: Columns (10,12) have mixed types. Specify dtype option on import or set low_memory=False.
         ext_data[sitename] = pd.read_csv(csv_file, index_col=0, parse_dates=True)
 
         try:
@@ -322,7 +323,7 @@ def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Un
     # filter out time series shorter than 1 year so site covers at least one full seasonal cycle
     # sfn_data = filter_short_timeseries(sfn_data)
 
-    # optional: Read a "blacklist/whitelist" to exclude sites from training
+    # optional: Read a "blacklist" to exclude sites from training
     if isinstance(blacklist, str):
         site_selection = pd.read_csv(blacklist, index_col='si_code')
         site_selection = list(site_selection.loc[site_selection['exclude'] == 0].index)

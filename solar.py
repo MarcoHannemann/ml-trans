@@ -6,9 +6,9 @@ This module introduces a class for solar calculations aiming at calculating the 
 
 import numpy as np
 import pandas as pd
-
 from nptyping import NDArray
 
+import constants
 # todo: make functions work with scalars where possible (e.g. solar dec)
 
 
@@ -22,9 +22,6 @@ class Location:
     offset: float
     lt: NDArray
     lstm: float
-
-    # approximate correction for atmospheric refraction at sunrise and sunse
-    zenith_constant = 90.833
 
     def __init__(self, lat, lon, date, timezone):
         """
@@ -101,7 +98,6 @@ class Location:
         valid_date = self.local_date[~pd.isnull(self.local_date)][0]
         return valid_date.utcoffset().total_seconds() / 60 / 60
 
-
     def _local_time(self) -> NDArray:
         """Calculates the local time in minutes."""
         return np.array([xi.hour * 60 for xi in self.local_date])
@@ -170,7 +166,7 @@ class Location:
         """Calculates the hour angle at sunrise."""
         return np.degrees(
             np.arccos(
-                np.cos(np.radians(Location.zenith_constant)) / (np.cos(np.radians(self.lat)) * np.cos(self.dec))
+                np.cos(np.radians(constants.zenith_constant)) / (np.cos(np.radians(self.lat)) * np.cos(self.dec))
                 - np.tan(np.radians(self.lat)) * np.tan(self.dec)
             )
         )
@@ -186,11 +182,13 @@ class Location:
         sunrise_hour_angle = self._sunrise_hour_angle()
         sunrise_share = (solnoon - sunrise_hour_angle * 4 / 1440)
         sunset_share = (solnoon + sunrise_hour_angle * 4 / 1440)
+
+        # Calculate hour of the day as decimal from share [0,1]
         sunrise_decimal = sunrise_share * 24
         sunset_decimal = sunset_share * 24
 
+        # Convert decimal time to sunrise and sunset dates if in expected range
         if not(np.isnan(sunrise_decimal[0])) and sunrise_share[0] < 1 and sunset_share[0] < 1:
-        #if not np.isnan(sunrise_decimal[0]):
             self.sunrise = (self.local_date[0].replace(hour=int(sunrise_decimal[0]),
                                                        minute=int((sunrise_decimal[0] * 60) % 60),
                                                        second=int((sunrise_decimal[0] * 3600) % 60)
@@ -212,9 +210,9 @@ class Location:
             self.sunset = self.local_date[-1] + pd.to_timedelta("1min")
 
 
-def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp, timezone) -> float:
+def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp, timezone: str) -> float:
     """This function calculates an approximation of the daily average cosine sun zenith angle [RAD] based on an
-    analytical solution following Hogan et al. 2015.
+    analytical solution following Hogan et al. 2016.
 
     The cosine of SZA is computed as the average over the time when the sun is above the horizon. The method works for
     any model time step with h_min and h_max expressing the hour angle at timestep t1 and t2. Since we are interested in
@@ -228,7 +226,7 @@ def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp, timezone) -> f
     :param lat: Latitude [deg]
     :param lon: Longitude [deg]
     :param date: date with hours set to 00 [pd.Timestamp]
-
+    :param timezone: timezone string for location, e.g. "Europe/Berlin"
     :return cos_mean_sza: Cosine of daily average sun zenith angle [RAD]
     """
 
@@ -239,7 +237,6 @@ def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp, timezone) -> f
 
     # Create Location object and compute relationships between site and the sun
     site = Location(lat, lon, hourly_timesteps, timezone)
-
     site.compute()
 
     # Minium and maximum hour angle for the day

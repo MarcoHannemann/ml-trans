@@ -240,9 +240,9 @@ if __name__ == "__main__":
     # paths
     inp_path = cp["PATHS"]["training_data"]
     try:
-        whitelist = cp.getboolean("PATHS", "whitelist")
+        blacklist = cp.getboolean("PATHS", "blacklist")
     except ValueError:
-        whitelist = cp["PATHS"]["whitelist"]
+        blacklist = cp["PATHS"]["blacklist"]
     ext_path = cp["PATHS"]["prediction_data"]
 
     # training settings
@@ -273,7 +273,7 @@ if __name__ == "__main__":
             freq=frequency,
             features=features,
             timestamp=model_time,
-            blacklist=whitelist,
+            blacklist=blacklist,
             target=target,
             external_prediction=ext_path,
         )

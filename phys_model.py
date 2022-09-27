@@ -218,6 +218,7 @@ def pt_inverted(ta, p, netrad, LAI, SZA, T):
 
 
 if __name__ == "__main__":
+    """If phys_model.py is run as stand-alone, it will read training data and add results from the inverted T-models."""
     target = "transpiration"
     # Get list of site name codes
     sites = pd.read_csv("site_meta.csv", index_col=0)

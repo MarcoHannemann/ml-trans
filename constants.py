@@ -18,3 +18,6 @@ molecular_water_air_ratio = 0.622
 
 # extinction coefficient for moderate to dense vegetated cover (F>2)
 k = 0.45
+
+# approximate correction for atmospheric refraction at sunrise and sunset
+zenith_constant = 90.833
