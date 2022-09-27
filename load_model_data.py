@@ -156,7 +156,6 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
                    features: list, timestamp: str, ext_prediction: str = None, freq: str = "1D") -> dict:
     """Transforms and fits data. Includes normalization and encoding.
 
-    :param ext_prediction: If path is specified, external locations are transformed for predictions
     :param x_train: Training input data
     :param x_test: Testing input data
     :param x_val: Validation input data
@@ -165,7 +164,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     :param y_val: Validation target
     :param features: List of feature names incoroporated in model
     :param timestamp: Date and Time of model run
-    :param ext_prediction: Path to directory with input for sites to predict (CSV)
+    :param ext_prediction: If path is specified, external locations are transformed for predictions
     :param freq: Temporal resolution 1D | 1H
     :return: dictionary containing transformed training data and untransformed samples
     """
@@ -299,16 +298,16 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     return filtered_data
 
 
-def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Union[bool, str] = False, target="transpiration",
-         external_prediction: str = None, ) -> tuple:
+def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Union[bool, str] = False,
+         target="transpiration", external_prediction: str = None, ) -> tuple:
     """Loads the data from passed path and does preprocessing for the neural network.
 
-    :param external_prediction: If path is specified, external locations are transformed for prediction
     :param path_csv: Directory containing CSV for point locaions
     :param freq: Temporal resolution. Currently only "1D" supported
     :param features: List with input variables to be used
     :param timestamp: Date and Time of model run
     :param blacklist: If True, sites specified in metadata are removed
+    :param external_prediction: If path is specified, external locations are transformed for prediction
     :param target: Name of target variable (transpiration|gc|alpha)
     :return train_data: Dictionary with preprocessed training data
     """

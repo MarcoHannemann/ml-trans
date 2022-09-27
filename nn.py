@@ -239,7 +239,10 @@ if __name__ == "__main__":
 
     # paths
     inp_path = cp["PATHS"]["training_data"]
-    whitelist = cp["PATHS"]["whitelist"]
+    try:
+        whitelist = cp.getboolean("PATHS", "whitelist")
+    except ValueError:
+        whitelist = cp["PATHS"]["whitelist"]
     ext_path = cp["PATHS"]["prediction_data"]
 
     # training settings
