@@ -35,6 +35,7 @@ import metrics
 #  tion of Australian woodland was independent of the water content of
 #  the top 80 cm of the soil profile, instead, water uptake has occurred
 #  from depths of up to 3 m.
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 def predictions_to_dataframe(y_true: np.ndarray, y_pred: np.ndarray) -> pd.DataFrame:
@@ -62,7 +63,7 @@ def initialize_model(
         n_layers: int = 2,
         n_neurons: int = 32,
         dropout: Union[bool, float] = False,
-) -> tf.keras.Model():
+        ) -> tf.keras.Model():
     """Creates a sequential model with tf.keras for regression problems. The parameters should be set in
     config/config.ini.
 
@@ -85,7 +86,10 @@ def initialize_model(
 
 
 def predict(
-        trained_model: tf.keras.Model(), x: np.ndarray, y: Union[None, np.ndarray]) -> np.ndarray:
+        trained_model: tf.keras.Model(),
+        x: np.ndarray,
+        y: Union[None, np.ndarray]
+        ) -> np.ndarray:
     """Uses trained model to make predictions based on input feature data and creates data frame with true values for
     comparison.
 
@@ -216,9 +220,6 @@ def predict_fluxnet(
         # Append PT-coefficient prediction to data frame
         alpha_all_stations = pd.concat([alpha_all_stations, alpha.rename(os.path.basename(file)[:-4])],
                                        axis=1)
-        series.plot(lw=0.3)
-        plt.savefig(f"output/fluxnet_predictions/fig/{os.path.basename(file)[:-4]}")
-        plt.clf()
 
     # Write out CSV with all FLUXNET predictions (Transpiration & coefficients)
     predictions_all_stations.to_csv(f"output/fluxnet_predictions/{model_time}-flx_predictions_{target_var}.csv")
@@ -293,7 +294,7 @@ if __name__ == "__main__":
             monitor="val_loss",
             patience=early_stopping_epochs,
             verbose=1,
-#            min_delta=0.01
+            min_delta=0.01
         )
 
         # Store model training checkpoints

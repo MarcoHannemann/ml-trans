@@ -116,8 +116,9 @@ def filter_data(data: pd.DataFrame) -> pd.DataFrame:
     :param data: training data
     :return: data: training data
     """
-    data = data.loc[data["vpd"] > 0]
-    data = data.loc[data["ssr"] > 50]
+    data = data.loc[data["alpha"] > 0]
+    #data = data.loc[data["vpd"] > 0]
+    #data = data.loc[data["ssr"] > 50]
     #data = data.loc[data["alpha"] > 50]
     return data.reset_index(drop=True)
 
@@ -343,7 +344,7 @@ def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Un
     # Convert dictionary of sites to single dataframe. Geographic information will be lost from here.
     sfn_data = dict_to_df(sfn_data)
     # Filter out data (e.g. T < 0 mm, net radiation < 50 W/m2)
-    #sfn_data = filter_data(sfn_data)
+    sfn_data = filter_data(sfn_data)
 
     # Shuffle data randomly and split into training, testing, validation. Temporal information will be lost from here.
     x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data, target=target)
