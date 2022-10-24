@@ -287,7 +287,7 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
         ext_data[sitename]["IGBP"] = igbp
 
         # Drop features not used in training
-        ext_data[sitename] = drop_features(ext_data[sitename], features+["IGBP"], target=[])
+        ext_data[sitename] = drop_features(ext_data[sitename], features + ["IGBP"], target=[])
 
     # Filter data by PFT and time period
     filtered_data = {}

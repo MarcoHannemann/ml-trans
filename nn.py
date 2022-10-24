@@ -77,11 +77,15 @@ def initialize_model(
     model_instance = tf.keras.Sequential()
     model_instance.add(tf.keras.Input(shape=(inp_shape,)))
     for i in range(0, n_layers):
-        model_instance.add(tf.keras.layers.Dense(n_neurons, activation=activation))
+        model_instance.add(tf.keras.layers.Dense(n_neurons,
+                                                 activation=activation,))
         if dropout:
             model_instance.add(tf.keras.layers.Dropout(dropout))
     model_instance.add(tf.keras.layers.Dense(1))
-    model_instance.compile(loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"])
+    model_instance.compile(loss="mean_squared_error",
+                           optimizer="adam",
+                           metrics=["mean_squared_error"],
+                           )
     return model_instance
 
 
@@ -103,7 +107,10 @@ def predict(
 
 
 def predict_fluxnet(
-        trained_model: tf.keras.Model(), target_var: str = "transpiration", freq: str = "1D") -> None:
+        trained_model: tf.keras.Model(),
+        target_var: str = "transpiration",
+        freq: str = "1D"
+        ) -> None:
     """Uses trained model to predict T at FLUXNET sites.
 
     :param trained_model: Compiled tf.keras model
@@ -227,15 +234,16 @@ def predict_fluxnet(
 
 
 if __name__ == "__main__":
-    # Get current timestamp of model execution and create folder for model outputs
+    # 1. Get current timestamp of model execution and create folder for model outputs
     model_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     try:
         os.mkdir(f"models/{model_time}/")
     except FileExistsError:
         pass
 
-    # read configuration file
-    cp = configparser.ConfigParser(delimiters="=", converters={"list": lambda x: [i.strip() for i in x.split(",")]})
+    # 2. read configuration
+    cp = configparser.ConfigParser(delimiters="=",
+                                   converters={"list": lambda x: [i.strip() for i in x.split(",")]})
     cp.read("config/config.ini")
 
     # paths
@@ -266,9 +274,9 @@ if __name__ == "__main__":
     # misc configs
     external_prediction = cp.getboolean("OTHER", "predict_fluxnet")
 
-    # Retrain model if retrain is enabled
+    # 3a. Retrain model if retrain is enabled
     if retrain:
-        # load model data and create sequential model
+        # load model data
         train_data, metadata = load_model_data.load(
             path_csv=inp_path,
             freq=frequency,
@@ -279,7 +287,7 @@ if __name__ == "__main__":
             external_prediction=ext_path,
         )
 
-        # Create sequential model from settings
+        # create sequential model with set configuration
         input_shape = train_data["Xtrain"].shape[1]
         model = initialize_model(
             inp_shape=input_shape,
@@ -289,16 +297,15 @@ if __name__ == "__main__":
             dropout=dropout_rate, )
 
         # Callbacks
-        # Early Stopping if validation loss doesn't change within specified number of epochs
+        # Callback: Early Stopping if validation loss doesn't change within specified number of epochs
         es_callback = tf.keras.callbacks.EarlyStopping(
             monitor="val_loss",
             patience=early_stopping_epochs,
             verbose=1,
-            min_delta=0.01
+            min_delta=0.001
         )
 
-        # Store model training checkpoints
-
+        # Callback: Store model training checkpoints
         checkpoint_path = f"checkpoint/{model_time}/cp.ckpt"
         cp_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path, save_weights_only=True, verbose=1)
@@ -391,8 +398,8 @@ if __name__ == "__main__":
         # write metadata to JSON
         with open(f"models/{model_time}/metadata.json", "w") as fp:
             json.dump(metadata, fp, indent=1)
+    # 3b) load pretrained model
     else:
-        # load pretrained model
         model = tf.keras.models.load_model(f'{cp["PATHS"]["saved_model"]}model/')
         with open(f'{cp["PATHS"]["saved_model"]}pipeline.pickle', "rb") as pipeline_file:
             pipeline = pickle.load(pipeline_file)
@@ -400,7 +407,7 @@ if __name__ == "__main__":
                                            ext_prediction=ext_path,
                                            freq=frequency,
                                            full_pipeline=pipeline)
-    # Use model to predict T at FLUXNET sites
+
+    # 4) use model to predict T at FLUXNET sites
     if external_prediction:
         predict_fluxnet(model, target_var=target, freq=frequency)
-
