@@ -17,7 +17,6 @@ from typing import Union
 import configparser
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from timezonefinder import TimezoneFinder
 
@@ -63,6 +62,7 @@ def initialize_model(
         n_layers: int = 2,
         n_neurons: int = 32,
         dropout: Union[bool, float] = False,
+        seed: int = 42,
         ) -> tf.keras.Model():
     """Creates a sequential model with tf.keras for regression problems. The parameters should be set in
     config/config.ini.
@@ -72,6 +72,7 @@ def initialize_model(
     :param n_layers: Number of hidden layers to be generated
     :param n_neurons: Number of neurons per hidden layer
     :param dropout: False or dropout rate
+    :param seed: random seed for dropout layers
     :return: Compiled model ready to be fitted to training data
     """
     model_instance = tf.keras.Sequential()
@@ -80,7 +81,8 @@ def initialize_model(
         model_instance.add(tf.keras.layers.Dense(n_neurons,
                                                  activation=activation,))
         if dropout:
-            model_instance.add(tf.keras.layers.Dropout(dropout))
+            model_instance.add(tf.keras.layers.Dropout(rate=dropout,
+                                                       seed=seed,))
     model_instance.add(tf.keras.layers.Dense(1))
     model_instance.compile(loss="mean_squared_error",
                            optimizer="adam",
@@ -112,7 +114,7 @@ def predict_fluxnet(
         freq: str = "1D"
         ) -> None:
     """Uses trained model to predict T at FLUXNET sites.
-
+    # todo: This function is messy and needs refactoring
     :param trained_model: Compiled tf.keras model
     :param target_var: Target the model was trained on [ transpiration || gc || alpha ]
     :param freq: Temporal resolution of model [ 1D || 1H ]
@@ -263,6 +265,7 @@ if __name__ == "__main__":
     # model architecture
     layers = cp.getint("MODEL.ARCHITECTURE", "n_layers")
     neurons = cp.getint("MODEL.ARCHITECTURE", "n_neurons")
+    seed = cp.getint("MODEL.ARCHITECTURE", "seed")
     try:
         dropout_rate = cp.getfloat("MODEL.ARCHITECTURE", "dropout_rate")
     except ValueError:
@@ -285,6 +288,7 @@ if __name__ == "__main__":
             blacklist=blacklist,
             target=target,
             external_prediction=ext_path,
+            seed=seed,
         )
 
         # create sequential model with set configuration
@@ -294,7 +298,8 @@ if __name__ == "__main__":
             activation=act_fn,
             n_layers=layers,
             n_neurons=neurons,
-            dropout=dropout_rate, )
+            dropout=dropout_rate,
+            seed=seed, )
 
         # Callbacks
         # Callback: Early Stopping if validation loss doesn't change within specified number of epochs

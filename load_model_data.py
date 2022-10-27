@@ -136,7 +136,7 @@ def drop_features(df: pd.DataFrame, features: list, target: list) -> pd.DataFram
     return df[features + target]
 
 
-def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> tuple:
+def split_data(data: pd.DataFrame, target="transpiration", random_state=None) -> tuple:
     """Splits the data into training, testing, validation.
 
 
@@ -301,7 +301,7 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
 
 
 def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Union[bool, str] = False,
-         target="transpiration", external_prediction: str = None, ) -> tuple:
+         target="transpiration", external_prediction: str = None, seed: int = 42, ) -> tuple:
     """Loads the data from passed path and does preprocessing for the neural network.
 
     :param path_csv: Directory containing CSV for point locaions
@@ -309,9 +309,11 @@ def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Un
     :param features: List with input variables to be used
     :param timestamp: Date and Time of model run
     :param blacklist: If True, sites specified in metadata are removed
-    :param external_prediction: If path is specified, external locations are transformed for prediction
     :param target: Name of target variable (transpiration|gc|alpha)
+    :param external_prediction: If path is specified, external locations are transformed for prediction
+    :param seed: random state for splitting
     :return train_data: Dictionary with preprocessed training data
+
     """
 
     # Create metadata dictionary
@@ -347,7 +349,7 @@ def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Un
     sfn_data = filter_data(sfn_data)
 
     # Shuffle data randomly and split into training, testing, validation. Temporal information will be lost from here.
-    x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data, target=target)
+    x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data, target=target, random_state=seed)
 
     # Scale and encode data for neural network
     train_data = transform_data(x_train, x_test, x_val, y_train, y_test, y_val,
