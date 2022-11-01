@@ -25,14 +25,16 @@ def plot_learning_curves(model_history, time):
     plt.savefig(f"models/{time}/plots/training_evo.png", dpi=300)
 
 
-def scatter_density_plot(df_train, df_test, df_val, title, time, density=True, upper_lim=10):
+def scatter_density_plot(df_train, df_test, df_val, target, title, time, density=True):
     """Creates a scatter plot with density visualization based on Gaussian KDE for training, testing and validation
     data of the neural network.
 
     :param df_train: Training data with true and predicted transpiration
     :param df_test: Testing data with true and predicted transpiration
     :param df_val: Validatio ndata with true and predicted transpiration
+    :param target: Training target
     :param title: Title of the scatter plot
+    :param time: Model execution time
     :param density: If True, points will be colored based on density estimated by KDE
     :param upper_lim: Upper limit of X/Y axes.
     """
@@ -57,12 +59,24 @@ def scatter_density_plot(df_train, df_test, df_val, title, time, density=True, u
     ax[1].plot([0, 1], [0, 1], transform=ax[1].transAxes)
     ax[2].plot([0, 1], [0, 1], transform=ax[2].transAxes)
 
-    ax[0].set_xlabel('T Prediction training (mm day-1)')
-    ax[0].set_ylabel('T True training (mm day-1)')
-    ax[1].set_xlabel('T Prediction test (mm day-1)')
-    ax[1].set_ylabel('T True test (mm day-1)')
-    ax[2].set_xlabel('T Prediction val (mm day-1)')
-    ax[2].set_ylabel('T True val (mm day-1)')
+    if target == "transpiration":
+        variable_label = "T"
+        unit = "(mm day-1)"
+        upper_lim = 10
+    elif target == "alpha":
+        variable_label = r"$\alpha_{c}$"
+        unit = ""
+        upper_lim = 20
+    elif target == "gc":
+        variable_label = r"$g_{c}$"
+        unit = ""
+        upper_lim = 200
+    ax[0].set_xlabel(f"{variable_label} Prediction training {unit}")
+    ax[0].set_ylabel(f"{variable_label}  True training {unit}")
+    ax[1].set_xlabel(f"{variable_label} Prediction test {unit}")
+    ax[1].set_ylabel(f"{variable_label} True test {unit}")
+    ax[2].set_xlabel(f"{variable_label} Prediction val {unit}")
+    ax[2].set_ylabel(f"{variable_label} True val {unit}")
     ax[0].title.set_text('Training')
     ax[1].title.set_text('Test')
     ax[2].title.set_text('Validation')

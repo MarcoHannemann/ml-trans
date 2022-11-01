@@ -311,7 +311,9 @@ if __name__ == "__main__":
         )
 
         # Callback: Store model training checkpoints
-        checkpoint_path = f"checkpoint/{model_time}/cp.ckpt"
+        checkpoint_path = f"models/{model_time}/model/checkpoint/cp.ckpt"
+
+        f"models/{model_time}/model/checkpoint"
         cp_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path, save_weights_only=True, verbose=1)
 
@@ -334,36 +336,33 @@ if __name__ == "__main__":
 
         # Save trained model to disk
         model.save(f"models/{model_time}/model")
+        with open(f"models/{model_time}/model/history.pkl", "wb") as history_file:
+            pickle.dump(model_history, history_file)
 
         # apply trained model on training data
         df_train = predict(model, train_data["Xtrain"], train_data["Ytrain"])
         df_test = predict(model, train_data["Xtest"], train_data["Ytest"])
         df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
-        try:
-            os.mkdir(f"models/{model_time}")
-        except FileExistsError:
-            pass
-        try:
-            os.mkdir(f"models/{model_time}/plots")
-        except FileExistsError:
-            pass
+        # create directories for model data
+        #os.mkdir(f"models/{model_time}")
+        os.mkdir(f"models/{model_time}/plots")
+
 
         # visualize model training results
         # Scatter density plot. Density should be disabled for hourly resolution, KDE needs too much computation power
 
         # axes scale, depends on target
-        upper_lim = 20  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
+        # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
         plotting.scatter_density_plot(
             df_train,
             df_test,
             df_val,
+            target=target,
             title=f"Target: {target}, {layers} Layers, {neurons} Neurons, "
                   f"Dropout: {dropout_rate}",
             time=model_time,
             density=True,
-            upper_lim=upper_lim,
-
         )
 
         # training evolution plot
@@ -398,7 +397,7 @@ if __name__ == "__main__":
             "corr": metrics.r2(df_val["y_true"], df_val["y_pred"]),
             "fit": f"y = {round(m3, 2)}x + {round(b3, 2)}'", }
 
-        metadata["results"]["cpk_path"] = f"checkpoint/{model_time}/"
+        metadata["results"]["cpk_path"] = checkpoint_path
 
         # write metadata to JSON
         with open(f"models/{model_time}/metadata.json", "w") as fp:

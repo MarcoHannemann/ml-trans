@@ -219,14 +219,13 @@ def pt_inverted(ta, p, netrad, LAI, SZA, T):
 
 if __name__ == "__main__":
     """If phys_model.py is run as stand-alone, it will read training data and add results from the inverted T-models."""
-    target = "transpiration"
+    target = "transpiration_ca"
     # Get list of site name codes
     sites = pd.read_csv("site_meta.csv", index_col=0)
-    #for site in list(sites.index):
-    for site in ["ESP_SAN_B_100"]\
-            :
+    for site in list(sites.index):
+    #for site in ["ESP_SAN_B_100"]:
         try:
-            df = pd.read_csv(f"~/Projects/ml-trans/data/270922_sapfluxnet-daily/{site}.csv", index_col=0, parse_dates=True)
+            df = pd.read_csv(f"~/Projects/ml-trans/data/sapfluxnet_daily/{site}.csv", index_col=0, parse_dates=True)
         except FileNotFoundError:
             continue
 
@@ -281,6 +280,6 @@ if __name__ == "__main__":
         df = df[(evaporation_to_latent_heat(df[target], df["t2m"]) / df["ssr"]) < 1]
         df = df.loc[np.abs(zscore(df.alpha, nan_policy="omit") < 3)]
         if len(df) > 0:
-            df.to_csv(f"/home/hannemam/Projects/ml-trans/data/270922-param/{site}.csv")
+            df.to_csv(f"/home/hannemam/Projects/ml-trans/data/271101-param/{site}.csv")
 
 # ESP SAN B 100 no height????
