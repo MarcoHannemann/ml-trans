@@ -86,7 +86,7 @@ def initialize_model(
     model_instance.add(tf.keras.layers.Dense(1))
     model_instance.compile(loss="mean_squared_error",
                            optimizer="adam",
-                           metrics=["mean_squared_error"],
+                           metrics=["mse"],
                            )
     return model_instance
 
@@ -325,7 +325,8 @@ if __name__ == "__main__":
             batch_size=1000,
             callbacks=[es_callback, cp_callback],
             validation_data=(train_data["Xtest"], train_data["Ytest"]), )
-        model_history = model.history
+
+
         # aic
         n_params = sum(
             tf.keras.backend.count_params(x) for x in model.trainable_weights)
@@ -336,6 +337,7 @@ if __name__ == "__main__":
 
         # Save trained model to disk
         model.save(f"models/{model_time}/model")
+        model_history = model.history
         with open(f"models/{model_time}/model/history.pkl", "wb") as history_file:
             pickle.dump(model_history, history_file)
 
@@ -344,16 +346,11 @@ if __name__ == "__main__":
         df_test = predict(model, train_data["Xtest"], train_data["Ytest"])
         df_val = predict(model, train_data["Xval"], train_data["Yval"])
 
-        # create directories for model data
-        #os.mkdir(f"models/{model_time}")
-        os.mkdir(f"models/{model_time}/plots")
-
-
         # visualize model training results
+        os.mkdir(f"models/{model_time}/plots")
         # Scatter density plot. Density should be disabled for hourly resolution, KDE needs too much computation power
-
         # axes scale, depends on target
-        # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
+        upper_lim = 200  # ** (math.ceil(math.log(train_data["Ytrain"].max(), 10)))
         plotting.scatter_density_plot(
             df_train,
             df_test,
@@ -368,14 +365,14 @@ if __name__ == "__main__":
         # training evolution plot
         plotting.plot_learning_curves(model_history, time=model_time)
 
-        # set model metadata
+        # set metadata: model architecture
         metadata["model"]["layers"] = layers
         metadata["model"]["neurons"] = neurons
         metadata["model"]["activation"] = act_fn
         metadata["model"]["dropout"] = dropout_rate
         metadata["model"]["early_stopping"] = early_stopping_epochs
 
-        # calculate performance metrics for prediction on training data
+        # set metadata: performance metrics for prediction on training data
         _, m1, b1 = metrics.linear_fit(
             df_train["y_true"], df_train["y_pred"], upper_lim=upper_lim)
         metadata["results"]["training"] = {

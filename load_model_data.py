@@ -21,6 +21,7 @@ from sklearn.pipeline import Pipeline
 # todo: filter out negative transpiration and nightime values
 # todo: add doy as columns for split data so that the doy is known after scaling
 # todo: check sklearn.preprocessing.RobustScaler for outlier detection
+# todo: Add SSR for filtering even if not selected as input but drop it after
 # filter out night time values before
 
 
@@ -67,7 +68,7 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
         data[sitename].loc[(data[sitename]['vpd'] < 0)] = np.nan
         data[sitename].loc[(data[sitename][target] < 0)] = np.nan
         if ["ssr"] in features:
-            data[sitename].loc[(data[sitename]['ssr'] < 0)] = np.nan
+            data[sitename].loc[(data[sitename]['ssr'] < 50)] = np.nan
 
         if "tr_ca" in list(data[sitename].columns):
             data[sitename].drop(columns=["tr_ca"], inplace=True)
@@ -112,13 +113,19 @@ def dict_to_df(data: dict) -> pd.DataFrame:
 
 def filter_data(data: pd.DataFrame) -> pd.DataFrame:
     """Filters out nighttime data and Transpiration lower zero
-
+    # todo: Check if function is required, should have happened in phys_model.py
     :param data: training data
     :return: data: training data
     """
-    data = data.loc[data["alpha"] > 0]
+    try:
+        data = data.loc[data["alpha"] > 0]
+    except KeyError:
+        try:
+            data = data.loc[data["gc"] > 0]
+            data = data.loc[data["gc"] < 200]
+        except KeyError:
+            pass
     #data = data.loc[data["vpd"] > 0]
-    #data = data.loc[data["ssr"] > 50]
     #data = data.loc[data["alpha"] > 50]
     return data.reset_index(drop=True)
 
@@ -334,17 +341,20 @@ def load(path_csv: str, freq: str, features: list, timestamp: str, blacklist: Un
         for site in forbidden_sites:
             del sfn_data[site]
 
-    # Store metadata
+    # set metadata: Site info
     metadata["site_info"]["n_sites"] = len(sfn_data)
     metadata["site_info"]["sitenames"] = sorted(list(sfn_data.keys()))
     # metadata["site_info"]["ecosystems"] = [arr.item() for arr in np.unique(([data["IGBP"].unique()
     #                                                                        for data in sfn_data.values()]))]
+
+    # set metadata: Model setup
     metadata["setup"]["frequency"] = freq
     metadata["setup"]["target"] = target
     metadata["setup"]["features"] = features
 
     # Convert dictionary of sites to single dataframe. Geographic information will be lost from here.
     sfn_data = dict_to_df(sfn_data)
+
     # Filter out data (e.g. T < 0 mm, net radiation < 50 W/m2)
     sfn_data = filter_data(sfn_data)
 
