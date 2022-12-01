@@ -9,6 +9,8 @@ import pandas as pd
 from nptyping import NDArray
 
 import constants
+
+
 # todo: make functions work with scalars where possible (e.g. solar dec)
 
 
@@ -188,7 +190,7 @@ class Location:
         sunset_decimal = sunset_share * 24
 
         # Convert decimal time to sunrise and sunset dates if in expected range
-        if not(np.isnan(sunrise_decimal[0])) and sunrise_share[0] < 1 and sunset_share[0] < 1:
+        if not (np.isnan(sunrise_decimal[0])) and sunrise_share[0] < 1 and sunset_share[0] < 1:
             self.sunrise = (self.local_date[0].replace(hour=int(sunrise_decimal[0]),
                                                        minute=int((sunrise_decimal[0] * 60) % 60),
                                                        second=int((sunrise_decimal[0] * 3600) % 60)
@@ -253,5 +255,3 @@ def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp, timezone: str)
                       / (np.radians(h_max) - np.radians(h_min)))
 
     return cos_mean_sza
-
-

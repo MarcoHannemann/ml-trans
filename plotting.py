@@ -11,6 +11,7 @@ import metrics
 
 
 def plot_learning_curves(model_history, time):
+    """Creates a training evolution plot for Training/Testing based on model history. Visualizes loss over epochs."""
     epochs = model_history.epoch
     loss = model_history.history["loss"]
     val_loss = model_history.history["val_loss"]

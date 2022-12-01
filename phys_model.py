@@ -30,8 +30,8 @@ def latent_heat_vaporization(ta, conversion_factor=1):
 
 def psychrometric_constant(air_pressure, air_temperature):
     """The ratio of specific heat (Cp) of moist air at constant pressure to latent heat (Lv) of vaporization of water.
-       Average about 0.4 gwater/kgair K-1
-       FAO Eq. 8 https://www.fao.org/3/x0490e/x0490e07.htm
+       Average about 0.4 g water/kg air K-1
+    FAO Eq. 8 https://www.fao.org/3/x0490e/x0490e07.htm
 
     :param air_pressure: Atmospheric Pressure [kPa]
     :param air_temperature: Air Temperature [°C]
@@ -43,6 +43,12 @@ def psychrometric_constant(air_pressure, air_temperature):
 
 def latent_heat_to_evaporation(LE, ta, scale="1D"):
     """Converts latent heat flux (W m-2) to Evaporation (mm).
+
+    Knauer, J., El-Madany, T.S., Zaehle, S., Migliavacca, M., 2018.
+        Bigleaf—An R package for the calculation of physical and physiological
+        ecosystem properties from eddy covariance data. PLOS ONE 13, e0201114.
+        https://doi.org/10.1371/journal.pone.0201114
+
     :param LE: Latent Heat Flux [W m-2]
     :param ta: Air temperature [°C]
     :param scale: Temporal resolution [1D|1H] for conversion of kg m-2 s-1
@@ -54,6 +60,12 @@ def latent_heat_to_evaporation(LE, ta, scale="1D"):
 
 def evaporation_to_latent_heat(ET, ta, scale="1D"):
     """Converts Evaporation (mm) to latent heat flux (W m-2).
+
+    Knauer, J., El-Madany, T.S., Zaehle, S., Migliavacca, M., 2018.
+        Bigleaf—An R package for the calculation of physical and physiological
+        ecosystem properties from eddy covariance data. PLOS ONE 13, e0201114.
+        https://doi.org/10.1371/journal.pone.0201114
+
     :param ET: vaporation [mm]
     :param ta: Air temperature [°C]
     :param scale: Temporal resolution [1D|1H] for conversion of Mj m-2 d-1
@@ -107,6 +119,7 @@ def net_radiation_canopy(netrad, LAI, SZA):
     Norman, J. M., Kustas, W. P., Prueger, J. H., & Diak, G. R. (2000). Surface flux estimation using radiometric
         temperature: A dual-temperature-difference method to minimize measurement errors.
         In Water Resources Research (Vol. 36, Issue 8, pp. 2263–2274). American Geophysical Union (AGU)."""
+
     with np.errstate(invalid='ignore'):
         r_nc = netrad * (1 - np.exp(-constants.k * LAI / np.sqrt(2 * np.cos(np.radians(SZA)))))
     return r_nc
@@ -116,7 +129,7 @@ def slope_vapour_pressure_curve(ta):
     """Calculates the slope of the relationship between saturation vapour pressure and temperature.
     FAO Eq. 13: https://www.fao.org/3/x0490e/x0490e07.htm
 
-    :param air_temperature: Air Temperature [°C]
+    :param ta: Air Temperature [°C]
     :return: Slope of saturation vapour pressure curve at air temperature [kPa °C-1]"""
 
     d = (4098 * (0.6108 * np.exp((17.27 * ta) / (ta + 237.3)))) / (ta + 237.3) ** 2
@@ -204,7 +217,6 @@ def pt_standard(ta, p, netrad, LAI, SZA, alpha_c=1.26):
     gamma = psychrometric_constant(p, ta)
     R_nc = net_radiation_canopy(netrad, LAI, SZA)
     T = alpha_c * (d / (d + gamma)) * R_nc
-
     return T
 
 
@@ -223,7 +235,6 @@ if __name__ == "__main__":
     # Get list of site name codes
     sites = pd.read_csv("site_meta.csv", index_col=0)
     for site in list(sites.index):
-    #for site in ["ESP_SAN_B_100"]:
         try:
             df = pd.read_csv(f"~/Projects/ml-trans/data/sapfluxnet_daily/{site}.csv", index_col=0, parse_dates=True)
         except FileNotFoundError:
@@ -281,5 +292,3 @@ if __name__ == "__main__":
         df = df.loc[np.abs(zscore(df.alpha, nan_policy="omit") < 3)]
         if len(df) > 0:
             df.to_csv(f"/home/hannemam/Projects/ml-trans/data/271101-param/{site}.csv")
-
-# ESP SAN B 100 no height????
