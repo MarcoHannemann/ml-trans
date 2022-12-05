@@ -4,6 +4,7 @@ phys_model.py
 This module contains all physical equations for the Priestley-Taylor and the Penman-Monteith Evaporation models.
 Can be run as stand-alone for creating training target data by inverting PT or PM.
 """
+import glob
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,8 @@ from scipy.stats import zscore
 import solar
 import constants
 from timezonefinder import TimezoneFinder
+import os
+from datetime import datetime
 
 
 def latent_heat_vaporization(ta, conversion_factor=1):
@@ -232,11 +235,21 @@ def pt_inverted(ta, p, netrad, LAI, SZA, T):
 if __name__ == "__main__":
     """If phys_model.py is run as stand-alone, it will read training data and add results from the inverted T-models."""
     target = "transpiration_ca"
+
+    in_dir = "/home/hannemam/Projects/ml-trans/data/sapfluxnet_daily"
+    out_dir = f"/home/hannemam/Projects/ml-trans/data/{datetime.today().strftime('%y%m%d')}-param"
+    try:
+        os.mkdir(out_dir)
+    except FileExistsError:
+        files = glob.glob("out_dir/*")
+        for file in files:
+            os.remove(file)
+
     # Get list of site name codes
     sites = pd.read_csv("site_meta.csv", index_col=0)
     for site in list(sites.index):
         try:
-            df = pd.read_csv(f"~/Projects/ml-trans/data/sapfluxnet_daily/{site}.csv", index_col=0, parse_dates=True)
+            df = pd.read_csv(f"{in_dir}/{site}.csv", index_col=0, parse_dates=True)
         except FileNotFoundError:
             continue
 
@@ -291,4 +304,4 @@ if __name__ == "__main__":
         df = df[(evaporation_to_latent_heat(df[target], df["t2m"]) / df["ssr"]) < 1]
         df = df.loc[np.abs(zscore(df.alpha, nan_policy="omit") < 3)]
         if len(df) > 0:
-            df.to_csv(f"/home/hannemam/Projects/ml-trans/data/271101-param/{site}.csv")
+            df.to_csv(f"{out_dir}/{site}.csv")
