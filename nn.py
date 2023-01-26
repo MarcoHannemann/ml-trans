@@ -236,6 +236,7 @@ def predict_fluxnet(
 
 
 if __name__ == "__main__":
+    np.random.seed(42)
     # 1. Get current timestamp of model execution and create folder for model outputs
     model_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     try:

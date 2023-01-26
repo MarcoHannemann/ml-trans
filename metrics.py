@@ -18,7 +18,9 @@ def r2(y_true, y_pred):
 
 
 def linear_fit(y_true, y_pred, upper_lim):
-    m, b, _, _, _ = linregress(y_true, y_pred)
+    m, b, _, _, _ = linregress(y_pred, y_true)
     x = np.linspace(0, upper_lim, 1000)
     y = m * x + b
     return y, m, b
+
+linregress
