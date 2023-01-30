@@ -325,7 +325,7 @@ if __name__ == "__main__":
             epochs=5000,
             batch_size=1000,
             callbacks=[es_callback, cp_callback],
-            validation_data=(train_data["Xtest"], train_data["Ytest"]), )
+            validation_data=(train_data["Xval"], train_data["Yval"]), )
 
 
         # aic
