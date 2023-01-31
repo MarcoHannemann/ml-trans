@@ -378,6 +378,7 @@ if __name__ == "__main__":
             df_train["y_true"], df_train["y_pred"], upper_lim=upper_lim)
         metadata["results"]["training"] = {
             "MAE": metrics.mae(df_train["y_true"], df_train["y_pred"]),
+            "MSE": metrics.mse(df_train["y_true"], df_train["y_pred"]),
             "corr": metrics.r2(df_train["y_true"], df_train["y_pred"]),
             "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'", }
 
@@ -385,6 +386,7 @@ if __name__ == "__main__":
             df_test["y_true"], df_test["y_pred"], upper_lim=upper_lim)
         metadata["results"]["testing"] = {
             "MAE": metrics.mae(df_test["y_true"], df_test["y_pred"]),
+            "MSE": metrics.mse(df_test["y_true"], df_test["y_pred"]),
             "corr": metrics.r2(df_test["y_true"], df_test["y_pred"]),
             "fit": f"y = {round(m1, 2)}x + {round(b1, 2)}'", }
 
@@ -392,6 +394,7 @@ if __name__ == "__main__":
             df_val["y_true"], df_val["y_pred"], upper_lim=upper_lim)
         metadata["results"]["validation"] = {
             "MAE": metrics.mae(df_val["y_true"], df_val["y_pred"]),
+            "MSE": metrics.mse(df_val["y_true"], df_val["y_pred"]),
             "corr": metrics.r2(df_val["y_true"], df_val["y_pred"]),
             "fit": f"y = {round(m3, 2)}x + {round(b3, 2)}'", }
 

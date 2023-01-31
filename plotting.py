@@ -18,7 +18,7 @@ def plot_learning_curves(model_history, time):
 
     fig, ax = plt.subplots(dpi=300)
     ax.plot(epochs, loss, label="Training", lw=0.7)
-    ax.plot(epochs, val_loss, label="Testing", lw=0.7)
+    ax.plot(epochs, val_loss, label="Validation", lw=0.7)
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
     ax.grid()

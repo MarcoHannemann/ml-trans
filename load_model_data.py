@@ -153,8 +153,8 @@ def split_data(data: pd.DataFrame, target="transpiration", random_state=None) ->
     :return: tuple containg train, test, val data for input x and target y
     """
     x_train, x_test, y_train, y_test = train_test_split(data.drop(columns=target), data[target],
-                                                        train_size=0.7,)
-    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.66, random_state=random_state)
+                                                        train_size=0.8, random_state=5)
+    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.125, random_state=random_state)
 
     return x_train, x_test, x_val, y_train, y_test, y_val
 
