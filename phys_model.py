@@ -100,19 +100,6 @@ def aerodynamic_resistance(u, h, z):
     return ga
 
 
-def canopy_available_energy(netrad, LAI, SZA):
-    """Computes the available energy in the canopy Based on Beer's Law
-
-    :param netrad: Net radiation [W/m²]
-    :param LAI: Leaf Area Index [-]
-    :param SZA: Sun Zenith Angle
-    :return: Ac: Canopy available energy
-    """
-
-    Ac = netrad * (1 - np.exp(-0.5 * LAI / np.cos(SZA)))
-    return Ac
-
-
 def net_radiation_canopy(netrad, LAI, SZA):
     """Calculates the net radiation of the canopy layer by partitioning measured net radiation using exponential
     function for Priestly-Taylor model.
