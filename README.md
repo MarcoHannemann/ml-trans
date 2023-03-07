@@ -1,11 +1,11 @@
-#ml-trans
+# ml-trans
 
 ---
 
 This repository contains the source code for the hybrid Priestley-Taylor to predict transpiration, trained with sap flow
 observations from the global SAPFLUXNET database.
 
-##How to Install the Project
+## How to Install the Project
 
 ---
 
@@ -25,7 +25,7 @@ Install the dependencies from the requirements.txt using pip
 ```$ pip install -r requirements.txt```
 
 
-##How to use the Project
+## How to use the Project
 
 ---
 
@@ -38,7 +38,7 @@ If you want to experiment by training a new model, edit the [configuration](conf
 text editor. Make sure you have the input data referred to in the `[PATHS]` section. If you have trouble configurating the
 model contact the author of this project [marco.hannemann@ufz.de](mailto:marco.hannemann@ufz.de?subject=[GitLab]Support%20with%20ml-trans)
 
-##How to contribute
+## How to contribute
 
 ---
 
@@ -46,7 +46,7 @@ Contributions to the project are welcome. If you find an error, please [raise an
 If you feel you can solve the error on your own, you are invited to create a merge request.
 
 
-##References
+## References
 
 ---
 
