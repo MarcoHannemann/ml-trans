@@ -26,14 +26,6 @@ import solar
 import plotting
 import metrics
 
-
-# global to-do list
-# todo: Involve flags in SAPFLUXNET data
-# todo: involve SWVL2?
-#  For example, Zeppel et al. (2008) reported that the transpira-
-#  tion of Australian woodland was independent of the water content of
-#  the top 80 cm of the soil profile, instead, water uptake has occurred
-#  from depths of up to 3 m.
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
