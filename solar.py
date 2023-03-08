@@ -30,6 +30,7 @@ class Location:
         :param lat: Latitude [degrees] of location, positive for North, negative for South
         :param lon: Longitude [degrees] of location, negative for East, positive for West
         :param date: naive timestamp for a date
+        :param timezone: Timezone string of the location
         """
         # Latitude, Longitude [deg] and date [pd.Timestamp]
         self.lat = lat
@@ -255,3 +256,6 @@ def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp, timezone: str)
                       / (np.radians(h_max) - np.radians(h_min)))
 
     return cos_mean_sza
+
+
+print(hogan_sza_average(52, 8, pd.to_datetime("2012-02-03"), "Europe/Berlin"))

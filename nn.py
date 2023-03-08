@@ -55,7 +55,7 @@ def initialize_model(
         n_neurons: int = 32,
         dropout: Union[bool, float] = False,
         seed: int = 42,
-        ) -> tf.keras.Model():
+        ) -> tf.keras.Model:
     """Creates a sequential model with tf.keras for regression problems. The parameters should be set in
     config/config.ini.
 
@@ -69,7 +69,7 @@ def initialize_model(
     """
     model_instance = tf.keras.Sequential()
     model_instance.add(tf.keras.Input(shape=(inp_shape,)))
-    for i in range(0, n_layers):
+    for _ in range(n_layers):
         model_instance.add(tf.keras.layers.Dense(n_neurons,
                                                  activation=activation,))
         if dropout:
