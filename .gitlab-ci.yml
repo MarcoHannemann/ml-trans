@@ -1,0 +1,11 @@
+stages:
+  - test
+
+
+test:python:
+  image: python3.9
+  before_script:
+    - pip install -U pip
+    - pip install requirements.txt
+  script:
+    - pytest tests/
