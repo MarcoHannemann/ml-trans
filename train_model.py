@@ -242,6 +242,3 @@ if __name__ == "__main__":
         # write metadata to JSON
     with open(f"models/{model_time}/metadata.json", "w") as fp:
             json.dump(metadata, fp, indent=1)
-    model = tf.keras.models.load_model(f'{cp["PATHS"]["saved_model"]}model/')
-    with open(f'{cp["PATHS"]["saved_model"]}pipeline.pickle', "rb") as pipeline_file:
-            pipeline = pickle.load(pipeline_file)

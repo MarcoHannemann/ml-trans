@@ -10,10 +10,6 @@ from nptyping import NDArray
 
 import constants
 
-
-# todo: make functions work with scalars where possible (e.g. solar dec)
-
-
 class Location:
     """Class Location to compute earth-sun relationships at a location on a given date."""
     lat: float
@@ -257,5 +253,3 @@ def hogan_sza_average(lat: float, lon: float, date: pd.Timestamp, timezone: str)
 
     return cos_mean_sza
 
-
-print(hogan_sza_average(52, 8, pd.to_datetime("2012-02-03"), "Europe/Berlin"))

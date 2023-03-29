@@ -80,21 +80,6 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     return data_new
 
 
-def filter_short_timeseries(data: dict, length=365) -> dict:
-    """Removes sites with time series shorter than specified length. Applied to not involve sites which don't catch
-    their full seasonal cycle.
-
-    :param data: dictionary containing site dataframes
-    :param length: minimum amount of timesteps in time series
-    :return: new dictionary with short time series sites removed
-    """
-    data_filtered = {}
-    for site, df in data.items():
-        if len(df) > length:
-            data_filtered[site] = df
-    return data_filtered
-
-
 def dict_to_df(data: dict) -> pd.DataFrame:
     """Summarizes all sites and convert dict to single dataframe. Temporal spatiotemporal information will be lost.
 
@@ -225,6 +210,50 @@ def transform_data(x_train: np.array,
             "Xval": np.array(df_val), "Yval": np.expand_dims(np.array(y_val), axis=1),
             "untransformed": {"Xtrain": x_train, "Xtest": x_test, "Xval": x_val}}
 
+def load_external(path: str,
+                  features: list,
+                  freq: str = "1D"
+                  ) -> dict:
+    """Loads tabular data for prediction outside of training. Files must contain all variables involved in training.
+    :param path: Path to input features for prediction
+    :param features: Input features for prediction
+    :param freq: Temporal resolution (1D|1H)
+    :return fitered_data: Dictionary with input features for each site
+    """
+    csv_files = sorted(glob.glob(f"{path}/*.csv"))
+    ext_data = {}
+    for csv_file in csv_files:
+        sitename = os.path.splitext(os.path.basename(csv_file))[0]
+        # todo: DtypeWarning: Columns (10,12) have mixed types. Specify dtype option on import or set low_memory=False.
+        ext_data[sitename] = pd.read_csv(csv_file, index_col=0, parse_dates=True)
+
+        try:
+            igbp = ext_data[sitename]["IGBP"].dropna().iloc[0]
+        except IndexError:
+            print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP.")
+            del ext_data[sitename]
+            continue
+        # todo: No preprocessing done before resampling (e.g. filter invalid data)
+        # Check if all features are present in FLUXNET samples
+        if not all(x in list(ext_data[sitename].columns) for x in features):
+            continue
+
+        # Resample data to specifiec temporal resolution
+        ext_data[sitename] = ext_data[sitename].resample(freq).mean()
+
+        # Set IGBP column to PFT
+        ext_data[sitename]["IGBP"] = igbp
+
+    # Filter data by PFT and time period
+    filtered_data = {}
+    for sitename, df in ext_data.items():
+        # Filter out PFTs not used during training
+        if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF',  'SAV', 'MF', 'DNF']:
+            # 2002-07-04: Start of MODIS data
+            filtered_data[sitename] = df["2002-07-04": "2015-12-31"]
+        else:
+            continue
+    return filtered_data
 
 
 def load(path_csv: str,
