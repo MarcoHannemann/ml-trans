@@ -114,6 +114,18 @@ def net_radiation_canopy(netrad, LAI, SZA):
         r_nc = netrad * (1 - np.exp(-constants.k * LAI / np.sqrt(2 * np.cos(np.radians(SZA)))))
     return r_nc
 
+def canopy_available_energy(netrad, LAI, SZA):
+    """Computes the available energy in the canopy Based on Beer's Law
+
+    :param netrad: Net radiation [W/m²]
+    :param LAI: Leaf Area Index [-]
+    :param SZA: Sun Zenith Angle
+    :return: Ac: Canopy available energy
+    """
+
+    Ac = netrad * (1 - np.exp(-0.5 * LAI) / np.cos(SZA))
+    return Ac
+
 
 def slope_vapour_pressure_curve(ta):
     """Calculates the slope of the relationship between saturation vapour pressure and temperature.
