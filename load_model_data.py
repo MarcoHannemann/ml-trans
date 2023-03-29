@@ -5,19 +5,18 @@ This module contains the data reading and preprocessing steps. It is imported by
 transforming and storing input and output data.
 """
 
-import os
 import glob
+import os
 import pickle
 from typing import Union
 
 import numpy as np
 import pandas as pd
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     """
@@ -54,15 +53,17 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
         try:
             igbp = data[sitename]["IGBP"].iloc[0]
         except IndexError:
-            print(f"WARNING: {sitename} contains empty dataframe or is missing variable.")
+            print(
+                f"WARNING: {sitename} contains empty dataframe or is missing variable."
+            )
             del data[sitename]
             continue
 
         # Filter data below 0
-        data[sitename].loc[(data[sitename]['vpd'] < 0)] = np.nan
+        data[sitename].loc[(data[sitename]["vpd"] < 0)] = np.nan
         data[sitename].loc[(data[sitename][target] < 0)] = np.nan
         if ["ssr"] in features:
-            data[sitename].loc[(data[sitename]['ssr'] < 50)] = np.nan
+            data[sitename].loc[(data[sitename]["ssr"] < 50)] = np.nan
 
         if "tr_ca" in list(data[sitename].columns):
             data[sitename].drop(columns=["tr_ca"], inplace=True)
@@ -104,8 +105,8 @@ def filter_data(data: pd.DataFrame) -> pd.DataFrame:
             data = data.loc[data["gc"] < 200]
         except KeyError:
             pass
-    #data = data.loc[data["vpd"] > 0]
-    #data = data.loc[data["alpha"] > 50]
+    # data = data.loc[data["vpd"] > 0]
+    # data = data.loc[data["alpha"] > 50]
     return data.reset_index(drop=True)
 
 
@@ -131,22 +132,26 @@ def split_data(data: pd.DataFrame, target="transpiration", random_state=None) ->
     :param random_state: Used to make model reproducable
     :return: tuple containg train, test, val data for input x and target y
     """
-    x_train, x_test, y_train, y_test = train_test_split(data.drop(columns=target), data[target],
-                                                        train_size=0.8, random_state=5)
-    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.125, random_state=random_state)
+    x_train, x_test, y_train, y_test = train_test_split(
+        data.drop(columns=target), data[target], train_size=0.8, random_state=5
+    )
+    x_train, x_val, y_train, y_val = train_test_split(
+        x_train, y_train, test_size=0.125, random_state=random_state
+    )
 
     return x_train, x_test, x_val, y_train, y_test, y_val
 
 
-def transform_data(x_train: np.array,
-                   x_test: np.array,
-                   x_val: np.array,
-                   y_train: np.array,
-                   y_test: np.array,
-                   y_val: np.array,
-                   features: list,
-                   timestamp: str
-                   ) -> dict:
+def transform_data(
+    x_train: np.array,
+    x_test: np.array,
+    x_val: np.array,
+    y_train: np.array,
+    y_test: np.array,
+    y_val: np.array,
+    features: list,
+    timestamp: str,
+) -> dict:
     """Transforms and fits data. Includes normalization and encoding.
 
     :param x_train: Training input data
@@ -169,13 +174,13 @@ def transform_data(x_train: np.array,
     # We use OneHotEncoder() for the categorical feature PFT, since we want to avoid any ranking in Land Cover Classes.
     # Instead of IGBP = {1..n}, we end up with one feature for each IGBP class set to 0 or 1.
 
-    num_pipeline = Pipeline([
-        ('minmax_scaler', StandardScaler())
-    ])
-    full_pipeline = ColumnTransformer([
-        ('num', num_pipeline, num_attributes),
-        ('cat', OneHotEncoder(), cat_attributes)
-    ])
+    num_pipeline = Pipeline([("minmax_scaler", StandardScaler())])
+    full_pipeline = ColumnTransformer(
+        [
+            ("num", num_pipeline, num_attributes),
+            ("cat", OneHotEncoder(), cat_attributes),
+        ]
+    )
 
     # apply pipeline, fit only to training data
     df_train = full_pipeline.fit_transform(x_train)
@@ -191,29 +196,32 @@ def transform_data(x_train: np.array,
 
     # convert numpy array back to data frame
     df_train = pd.DataFrame(df_train, columns=num_attributes + new_categories)
-    df_train.columns = df_train.columns.map(''.join)
+    df_train.columns = df_train.columns.map("".join)
     df_test = pd.DataFrame(df_test, columns=num_attributes + new_categories)
-    df_test.columns = df_test.columns.map(''.join)
+    df_test.columns = df_test.columns.map("".join)
     df_val = pd.DataFrame(df_val, columns=num_attributes + new_categories)
-    df_val.columns = df_val.columns.map(''.join)
+    df_val.columns = df_val.columns.map("".join)
 
     # write out transformed data to CSV for analysis purpose (not used in neural network)
-    df_train.to_csv('output/training/train_samples.csv', index=False)
-    df_test.to_csv('output/training/test_samples.csv', index=False)
-    df_val.to_csv('output/training/val_samples.csv', index=False)
+    df_train.to_csv("output/training/train_samples.csv", index=False)
+    df_test.to_csv("output/training/test_samples.csv", index=False)
+    df_val.to_csv("output/training/val_samples.csv", index=False)
 
-    y_train.to_csv('output/training/train_lables.csv', index=False)
-    y_test.to_csv('output/training/test_lables.csv', index=False)
-    y_val.to_csv('output/training/val_lables.csv', index=False)
-    return {"Xtrain": np.array(df_train), "Ytrain": np.expand_dims(np.array(y_train), axis=1),
-            "Xtest": np.array(df_test), "Ytest": np.expand_dims(np.array(y_test), axis=1),
-            "Xval": np.array(df_val), "Yval": np.expand_dims(np.array(y_val), axis=1),
-            "untransformed": {"Xtrain": x_train, "Xtest": x_test, "Xval": x_val}}
+    y_train.to_csv("output/training/train_lables.csv", index=False)
+    y_test.to_csv("output/training/test_lables.csv", index=False)
+    y_val.to_csv("output/training/val_lables.csv", index=False)
+    return {
+        "Xtrain": np.array(df_train),
+        "Ytrain": np.expand_dims(np.array(y_train), axis=1),
+        "Xtest": np.array(df_test),
+        "Ytest": np.expand_dims(np.array(y_test), axis=1),
+        "Xval": np.array(df_val),
+        "Yval": np.expand_dims(np.array(y_val), axis=1),
+        "untransformed": {"Xtrain": x_train, "Xtest": x_test, "Xval": x_val},
+    }
 
-def load_external(path: str,
-                  features: list,
-                  freq: str = "1D"
-                  ) -> dict:
+
+def load_external(path: str, features: list, freq: str = "1D") -> dict:
     """Loads tabular data for prediction outside of training. Files must contain all variables involved in training.
     :param path: Path to input features for prediction
     :param features: Input features for prediction
@@ -248,22 +256,23 @@ def load_external(path: str,
     filtered_data = {}
     for sitename, df in ext_data.items():
         # Filter out PFTs not used during training
-        if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF',  'SAV', 'MF', 'DNF']:
+        if df["IGBP"].unique().item() in ["EBF", "ENF", "DBF", "SAV", "MF", "DNF"]:
             # 2002-07-04: Start of MODIS data
-            filtered_data[sitename] = df["2002-07-04": "2015-12-31"]
+            filtered_data[sitename] = df["2002-07-04":"2015-12-31"]
         else:
             continue
     return filtered_data
 
 
-def load(path_csv: str,
-         freq: str,
-         features: list,
-         timestamp: str,
-         blacklist: Union[bool, str] = False,
-         target="transpiration",
-         seed: int = 42,
-         ) -> tuple:
+def load(
+    path_csv: str,
+    freq: str,
+    features: list,
+    timestamp: str,
+    blacklist: Union[bool, str] = False,
+    target="transpiration",
+    seed: int = 42,
+) -> tuple:
     """Loads the data from passed path and does preprocessing for the neural network.
 
     :param path_csv: Directory containing CSV for point locaions
@@ -286,8 +295,8 @@ def load(path_csv: str,
 
     # optional: Read a "blacklist" to exclude sites from training
     if isinstance(blacklist, str):
-        site_selection = pd.read_csv(blacklist, index_col='si_code')
-        site_selection = list(site_selection.loc[site_selection['exclude'] == 0].index)
+        site_selection = pd.read_csv(blacklist, index_col="si_code")
+        site_selection = list(site_selection.loc[site_selection["exclude"] == 0].index)
         forbidden_sites = [site for site in sfn_data.keys() if site in site_selection]
         for site in forbidden_sites:
             del sfn_data[site]
@@ -308,9 +317,12 @@ def load(path_csv: str,
     sfn_data = filter_data(sfn_data)
 
     # Shuffle data randomly and split into training, testing, validation. Temporal information will be lost from here.
-    x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data, target=target, random_state=seed)
+    x_train, x_test, x_val, y_train, y_test, y_val = split_data(
+        sfn_data, target=target, random_state=seed
+    )
 
     # Scale and encode data for neural network
-    train_data = transform_data(x_train, x_test, x_val, y_train, y_test, y_val,
-                                features, timestamp=timestamp)
+    train_data = transform_data(
+        x_train, x_test, x_val, y_train, y_test, y_val, features, timestamp=timestamp
+    )
     return train_data, metadata

@@ -6,8 +6,8 @@ import tensorflow as tf
 from timezonefinder import TimezoneFinder
 
 import load_model_data
-import solar
 import phys_model
+import solar
 
 # With the seed set to 42, you can reproduce the results from the study
 np.random.seed(42)
@@ -18,7 +18,9 @@ with open("models/model/pipeline.pickle", "rb") as pipeline_file:
     pipeline = pickle.load(pipeline_file)
 features = ["swvl1", "swvl2", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
 # We define the prediction site and the input features the model was trained for
-fluxnet_data = load_model_data.load_external(path="data/fluxnet2/", features=features, freq="1D")
+fluxnet_data = load_model_data.load_external(
+    path="data/fluxnet2/", features=features, freq="1D"
+)
 
 for sitename, data in fluxnet_data.items():
     pft = data["IGBP"].iloc[0]
@@ -33,7 +35,6 @@ for sitename, data in fluxnet_data.items():
 
     inp_data = pipeline.transform(inp_data)
 
-
     alpha = pd.Series(model.predict(inp_data).flatten())
     alpha.index = time_index
 
@@ -46,10 +47,11 @@ for sitename, data in fluxnet_data.items():
     timezone_str = TimezoneFinder().timezone_at(lng=longitude, lat=latitude)
 
     # Apply daily SZA averaging
-    sza = pd.Series(time_index).apply(lambda day: solar.hogan_sza_average(lat=latitude,
-                                                               lon=longitude,
-                                                               date=day,
-                                                               timezone=timezone_str))
+    sza = pd.Series(time_index).apply(
+        lambda day: solar.hogan_sza_average(
+            lat=latitude, lon=longitude, date=day, timezone=timezone_str
+        )
+    )
 
     # Convert from cosine(SZA) [RAD] to SZA [deg]
     sza = np.degrees(np.arccos(sza))
@@ -68,7 +70,6 @@ for sitename, data in fluxnet_data.items():
         ta=aux_data["t2m"],
         scale="1D",
     )
-
 
     t.index = time_index
     output = pd.DataFrame(data=[alpha, t]).T
