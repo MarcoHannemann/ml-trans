@@ -12,10 +12,13 @@ import phys_model
 import solar
 
 
-def predict_fluxnet(trained_model, transformation_pipeline, flux_data: dict, output_fmt: str = "netCDF"):
+def predict_fluxnet(
+    trained_model, transformation_pipeline, flux_data: dict, output_fmt: str = "CSV"
+):
     df_t = pd.DataFrame(index=pd.date_range("2002-07-04", "2015-12-31"))
     df_alpha = pd.DataFrame(index=pd.date_range("2002-07-04", "2015-12-31"))
     for sitename, data in flux_data.items():
+        print(f"Predicting {sitename}")
         pft = data["IGBP"].iloc[0]
         time_index = data.index
 
@@ -65,8 +68,8 @@ def predict_fluxnet(trained_model, transformation_pipeline, flux_data: dict, out
         )
 
         t.index = time_index
-        df_t[sitename] = t
-        df_alpha[sitename] = alpha
+        df_t = pd.concat([df_t, t.rename(sitename)], axis=1)
+        df_alpha = pd.concat([df_alpha, alpha.rename(sitename)], axis=1)
         if output_fmt == "CSV":
             output = pd.DataFrame(data=[alpha, t]).T
             output.columns = ["alpha_c", "transpiration"]
@@ -76,14 +79,19 @@ def predict_fluxnet(trained_model, transformation_pipeline, flux_data: dict, out
         write_netcdf(df_t, df_alpha)
     return df_t, df_alpha
 
+
 def write_netcdf(ml_predictions, ml_coeffs):
-    idx_t = pd.MultiIndex.from_product([list(ml_predictions.columns), list(ml_predictions.index)],
-                                       names=["station", "time"])
+    idx_t = pd.MultiIndex.from_product(
+        [list(ml_predictions.columns), list(ml_predictions.index)],
+        names=["station", "time"],
+    )
     col_t = ["transpiration"]
     df_t = pd.DataFrame(np.array(ml_predictions.T).flatten(), idx_t, col_t)
     ds_t = df_t.to_xarray()
 
-    idx_c = pd.MultiIndex.from_product([list(ml_coeffs.columns), list(ml_coeffs.index)], names=["station", "time"])
+    idx_c = pd.MultiIndex.from_product(
+        [list(ml_coeffs.columns), list(ml_coeffs.index)], names=["station", "time"]
+    )
     col_c = ["PT_coefficient"]
     df_c = pd.DataFrame(np.array(ml_coeffs.T).flatten(), idx_c, col_c)
     ds_c = df_c.to_xarray()
@@ -122,32 +130,35 @@ def write_netcdf(ml_predictions, ml_coeffs):
     ds["lon"].attrs["long_name"] = "station longitude"
     ds["lon"].attrs["units"] = "degrees_east"
 
-    ds = ds.fillna(-9999.)
-    ds.attrs = {"title": "Daily transpiration from SAP-ANN",
-                "institution": "Helmholtz-Centre for Environmental Research - UFZ GmbH",
-                "author": "Marco Hannemann",
-                "email": "marco.hannemann@ufz.de",
-                "source": "model",
-                "featureType": "timeSeries",
-                "references": "Hannemann et al. 2023",
-                "Conventions": "CF-1.8",
-                "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} with netCDF {version('netCDF4')}"
-                           f"1.6.0",
-                }
+    ds = ds.fillna(-9999.0)
+    ds.attrs = {
+        "title": "Daily transpiration from SAP-ANN",
+        "institution": "Helmholtz-Centre for Environmental Research - UFZ GmbH",
+        "author": "Marco Hannemann",
+        "email": "marco.hannemann@ufz.de",
+        "source": "model",
+        "featureType": "timeSeries",
+        "references": "Hannemann et al. 2023",
+        "Conventions": "CF-1.8",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} with netCDF4 {version('netCDF4')}",
+    }
 
-    ds = ds.reindex({index_name: ds.indexes[index_name] for index_name in ["time", "station"]})
-    ds.to_netcdf("output/hybrid_T.nc", unlimited_dims=["time"], encoding={"transpiration": {"dtype": np.float64,
-                                                                                    "_FillValue": -9999.},
-                                                                  "PT_coefficient": {"dtype": np.float64,
-                                                                                     "_FillValue": -9999.},
-                                                                  "time": {"dtype": "int32"},
-                                                                  "lat": {"dtype": np.float32, "_FillValue": None},
-                                                                  "lon": {"dtype": np.float32, "_FillValue": None},
-                                                                  "station": {
-                                                                      "_FillValue": None,
-                                                                      "dtype": "unicode"
-                                                                  }
-                                                                  })
+    ds = ds.reindex(
+        {index_name: ds.indexes[index_name] for index_name in ["time", "station"]}
+    )
+    ds.to_netcdf(
+        "output/hybrid_T.nc",
+        unlimited_dims=["time"],
+        encoding={
+            "transpiration": {"dtype": np.float64, "_FillValue": -9999.0},
+            "PT_coefficient": {"dtype": np.float64, "_FillValue": -9999.0},
+            "time": {"dtype": "int32"},
+            "lat": {"dtype": np.float32, "_FillValue": None},
+            "lon": {"dtype": np.float32, "_FillValue": None},
+            "station": {"_FillValue": None, "dtype": "unicode"},
+        },
+    )
+
 
 if __name__ == "__main__":
     # With the seed set to 42, you can reproduce the results from the study
@@ -161,6 +172,6 @@ if __name__ == "__main__":
 
     # We define the prediction site and the input features the model was trained for
     fluxnet_data = load_model_data.load_external(
-        path="data/fluxnet2/", features=features, freq="1D"
+        path="data/fluxnet/", features=features, freq="1D"
     )
-    predict_fluxnet(model, pipeline,fluxnet_data)
+    predict_fluxnet(model, pipeline, fluxnet_data, output_fmt="netCDF")

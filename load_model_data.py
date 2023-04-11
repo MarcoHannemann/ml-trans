@@ -18,6 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+
 def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     """
     Loads comma seperates value files containing time series for a single location into a data dictionary.
@@ -232,8 +233,23 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     ext_data = {}
     for csv_file in csv_files:
         sitename = os.path.splitext(os.path.basename(csv_file))[0]
-        # todo: DtypeWarning: Columns (10,12) have mixed types. Specify dtype option on import or set low_memory=False.
-        ext_data[sitename] = pd.read_csv(csv_file, index_col=0, parse_dates=True)
+        ext_data[sitename] = pd.read_csv(
+            csv_file,
+            index_col=0,
+            parse_dates=True,
+            dtype={
+                "ssr": np.float64,
+                "windspeed": np.float64,
+                "sp": np.float64,
+                "t2m": np.float64,
+                "vpd": np.float64,
+                "swvl1": np.float64,
+                "swvl2": np.float64,
+                "height": np.float64,
+                "LAI": np.float64,
+                "FPAR": np.float64,
+            },
+        )
 
         try:
             igbp = ext_data[sitename]["IGBP"].dropna().iloc[0]

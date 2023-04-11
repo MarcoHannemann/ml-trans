@@ -4,6 +4,8 @@ solar.py
 This module introduces a class for solar calculations aiming at calculating the solar zenith angle (SZA).
 """
 
+import warnings
+
 from nptyping import NDArray
 import numpy as np
 import pandas as pd
@@ -256,8 +258,10 @@ def hogan_sza_average(
     site.compute()
 
     # Minium and maximum hour angle for the day
-    h_min = np.nanmin(site.hra)
-    h_max = np.nanmax(site.hra)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        h_min = np.nanmin(site.hra)
+        h_max = np.nanmax(site.hra)
 
     # Reduce declination to scalar value to prevent returning an array. Declination is constant over the day.
     declination = np.unique(site.dec)[0]
