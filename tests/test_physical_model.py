@@ -5,6 +5,7 @@ This module contains tests for the physical equations.
 """
 
 import numpy as np
+
 import phys_model
 
 
