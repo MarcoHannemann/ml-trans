@@ -5,16 +5,16 @@ This module contains all physical equations for the Priestley-Taylor and the Pen
 Can be run as stand-alone for creating training target data by inverting PT or PM.
 """
 import glob
+import os
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 from scipy.stats import zscore
+from timezonefinder import TimezoneFinder
 
 import constants
-from datetime import datetime
-import os
 import solar
-from timezonefinder import TimezoneFinder
 
 
 def latent_heat_vaporization(ta, conversion_factor=1):

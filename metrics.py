@@ -5,8 +5,8 @@ This module contains functions for calculating basic metrics that can be wrapped
 """
 
 import numpy as np
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from scipy.stats import linregress
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 
 def mae(y_true, y_pred):

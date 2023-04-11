@@ -6,9 +6,9 @@ This module introduces a class for solar calculations aiming at calculating the 
 
 import warnings
 
-from nptyping import NDArray
 import numpy as np
 import pandas as pd
+from nptyping import NDArray
 
 import constants
 

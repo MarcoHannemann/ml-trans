@@ -1,6 +1,6 @@
+import pickle
 from datetime import datetime
 from importlib.metadata import version
-import pickle
 
 import numpy as np
 import pandas as pd

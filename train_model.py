@@ -7,13 +7,13 @@ nn.py is the core of ml-trans. It contains the source for the artificial neural 
 workflow steps: Loading -> Preprocessing -> Training -> Prediction -> Model evaluation.
 """
 
-from datetime import datetime
+import configparser
 import json
 import os
 import pickle
+from datetime import datetime
 from typing import Union
 
-import configparser
 import numpy as np
 import pandas as pd
 import tensorflow as tf

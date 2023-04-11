@@ -4,9 +4,10 @@ plotting.py
 Implementation of a scatter density plot for model training evaluation.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.stats import gaussian_kde
+
 import metrics
 
 
