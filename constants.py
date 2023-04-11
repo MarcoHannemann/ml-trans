@@ -11,7 +11,7 @@ karman = 0.41
 air_density = 1.2
 
 # specific heat at constant pressure [MJ kg-1 °C-1]
-air_specific_heat_capacity = 1.013*10**(-3)
+air_specific_heat_capacity = 1.013 * 10 ** (-3)
 
 # Ratio of molecular weight of water vapor and dry air [-]
 molecular_water_air_ratio = 0.622
