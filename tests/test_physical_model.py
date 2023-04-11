@@ -14,7 +14,12 @@ def test_latent_heat_of_vaporization():
 
 
 def test_psychrometric_constant():
-    assert round(phys_model.psychrometric_constant(air_pressure=100, air_temperature=25), 6) == 0.066699
+    assert (
+        round(
+            phys_model.psychrometric_constant(air_pressure=100, air_temperature=25), 6
+        )
+        == 0.066699
+    )
 
 
 def test_slope_vapour_pressure_curve():
