@@ -1,11 +1,37 @@
 stages:
+  - lint
   - test
+  - run
 
-
-test:python:
+.base_image:
   image: python:3.9
+
+.dependencies:
   before_script:
     - pip install -U pip
     - pip install -r requirements.txt
+
+lint:
+  stage: lint
+  extends:
+    - .base_image
+    - .dependencies
+  script:
+    - isort --check --diff .
+    - black --check --diff .
+
+test:python:
+  stage: test
+  extends:
+    - .base_image
+    - .dependencies
   script:
     - pytest tests/
+
+run:
+  stage: run
+  extends:
+    - .base_image
+    - .dependencies
+  script:
+    - python predict.py
