@@ -115,7 +115,7 @@ def write_netcdf(ml_predictions, ml_coeffs):
     ds["PT_coefficient"].attrs["units"] = "1"
     # ds["PT_coefficient"].attrs["_FillValue"] = np.array(-9999.).astype(np.float64)
     ds["PT_coefficient"] = ds["PT_coefficient"].transpose("time", "station")
-    fluxnet_meta = pd.read_csv("FLX-site_info.csv", index_col=0, sep=";")
+    fluxnet_meta = pd.read_csv("data/FLX-site_info.csv", index_col=0, sep=";")
     lats = fluxnet_meta.loc[ds["station"].values].lat
     lats.index = lats.index.rename("station")
     ds["lat"] = lats
