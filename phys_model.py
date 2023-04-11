@@ -10,11 +10,11 @@ import numpy as np
 import pandas as pd
 from scipy.stats import zscore
 
-import solar
 import constants
-from timezonefinder import TimezoneFinder
-import os
 from datetime import datetime
+import os
+import solar
+from timezonefinder import TimezoneFinder
 
 
 def latent_heat_vaporization(ta, conversion_factor=1):
@@ -40,8 +40,9 @@ def psychrometric_constant(air_pressure, air_temperature):
     :param air_temperature: Air Temperature [°C]
     :return: Psychrometric constant [kPa °C-1]
     """
-    return ((constants.air_specific_heat_capacity * air_pressure)
-            / (constants.molecular_water_air_ratio * latent_heat_vaporization(air_temperature)))
+    return (constants.air_specific_heat_capacity * air_pressure) / (
+        constants.molecular_water_air_ratio * latent_heat_vaporization(air_temperature)
+    )
 
 
 def latent_heat_to_evaporation(LE, ta, scale="1D"):
@@ -96,7 +97,7 @@ def aerodynamic_resistance(u, h, z):
     zh = z
     z0m = 0.1 * h
     z0h = 0.1 * z0m
-    ga = (np.log((zm - d) / z0m) * np.log((zh - d) / z0h)) / (constants.karman ** 2 * u)
+    ga = (np.log((zm - d) / z0m) * np.log((zh - d) / z0h)) / (constants.karman**2 * u)
     return ga
 
 
@@ -108,11 +109,27 @@ def net_radiation_canopy(netrad, LAI, SZA):
         sensing. Remote Sensing of Environment, 60(2), 195–216.
     Norman, J. M., Kustas, W. P., Prueger, J. H., & Diak, G. R. (2000). Surface flux estimation using radiometric
         temperature: A dual-temperature-difference method to minimize measurement errors.
-        In Water Resources Research (Vol. 36, Issue 8, pp. 2263–2274). American Geophysical Union (AGU)."""
+        In Water Resources Research (Vol. 36, Issue 8, pp. 2263–2274). American Geophysical Union (AGU).
+    """
 
-    with np.errstate(invalid='ignore'):
-        r_nc = netrad * (1 - np.exp(-constants.k * LAI / np.sqrt(2 * np.cos(np.radians(SZA)))))
+    with np.errstate(invalid="ignore"):
+        r_nc = netrad * (
+            1 - np.exp(-constants.k * LAI / np.sqrt(2 * np.cos(np.radians(SZA))))
+        )
     return r_nc
+
+
+def canopy_available_energy(netrad, LAI, SZA):
+    """Computes the available energy in the canopy Based on Beer's Law
+
+    :param netrad: Net radiation [W/m²]
+    :param LAI: Leaf Area Index [-]
+    :param SZA: Sun Zenith Angle
+    :return: Ac: Canopy available energy
+    """
+
+    Ac = netrad * (1 - np.exp(-0.5 * LAI) / np.cos(SZA))
+    return Ac
 
 
 def slope_vapour_pressure_curve(ta):
@@ -126,7 +143,18 @@ def slope_vapour_pressure_curve(ta):
     return d
 
 
-def pm_standard(gc, p, ta, VPD, netrad, LAI, SZA, u, h, z, ):
+def pm_standard(
+    gc,
+    p,
+    ta,
+    VPD,
+    netrad,
+    LAI,
+    SZA,
+    u,
+    h,
+    z,
+):
     """Computes Transpiration based on Two-Layer Penman-Monteith method.
     Canopy stomatal conductance gc is estimated from stomatal conductance gs by applying the "big-leaf" model.
 
@@ -255,27 +283,43 @@ if __name__ == "__main__":
 
         # Apply daily SZA averaging
         day_series = pd.Series(df.index)
-        day_series = day_series.apply(lambda day: solar.hogan_sza_average(lat=latitude,
-                                                                          lon=longitude,
-                                                                          date=day,
-                                                                          timezone=timezone_str))
+        day_series = day_series.apply(
+            lambda day: solar.hogan_sza_average(
+                lat=latitude, lon=longitude, date=day, timezone=timezone_str
+            )
+        )
         # Convert from cosine(SZA) [RAD] to SZA [deg]
         zenith_angle = np.degrees(np.arccos(day_series))
         zenith_angle.index = df.index
 
         # Inversion of Penman-Monteith model to calculate canopy conductance g_c
         try:
-            gc = pm_inverted(T=evaporation_to_latent_heat(df[target], df["t2m"]), p=df["sp"], ta=df["t2m"],
-                             VPD=df["vpd"], netrad=df["ssr"], LAI=df["LAI"],
-                             SZA=zenith_angle, u=df["windspeed"], h=df["height"], z=df["height"])
+            gc = pm_inverted(
+                T=evaporation_to_latent_heat(df[target], df["t2m"]),
+                p=df["sp"],
+                ta=df["t2m"],
+                VPD=df["vpd"],
+                netrad=df["ssr"],
+                LAI=df["LAI"],
+                SZA=zenith_angle,
+                u=df["windspeed"],
+                h=df["height"],
+                z=df["height"],
+            )
 
         except KeyError:
             continue
 
         # Inversion of Priestley-Taylor model to calculate PT-coefficent alpha
         try:
-            alpha = pt_inverted(ta=df["t2m"], p=df["sp"], netrad=df["ssr"], LAI=df["LAI"], SZA=zenith_angle,
-                                T=evaporation_to_latent_heat(df[target], df["t2m"]))
+            alpha = pt_inverted(
+                ta=df["t2m"],
+                p=df["sp"],
+                netrad=df["ssr"],
+                LAI=df["LAI"],
+                SZA=zenith_angle,
+                T=evaporation_to_latent_heat(df[target], df["t2m"]),
+            )
         except KeyError:
             continue
 
