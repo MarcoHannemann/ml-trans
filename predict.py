@@ -13,7 +13,7 @@ import solar
 
 
 def predict_fluxnet(
-    trained_model, transformation_pipeline, flux_data: dict, output_fmt: str = "CSV"
+    trained_model, transformation_pipeline, features, flux_data: dict, output_fmt: str = "CSV"
 ):
     df_t = pd.DataFrame(index=pd.date_range("2002-07-04", "2015-12-31"))
     df_alpha = pd.DataFrame(index=pd.date_range("2002-07-04", "2015-12-31"))
@@ -54,7 +54,7 @@ def predict_fluxnet(
         sza.index = time_index
 
         # Apply PT model on predicted alpha coefficients, convert from W m-2 to mm d-1
-        t = phys_model.latent_heat_to_evaporation(
+        transpiration_pt = phys_model.latent_heat_to_evaporation(
             phys_model.pt_standard(
                 ta=aux_data["t2m"],
                 p=aux_data["sp"],
@@ -67,11 +67,11 @@ def predict_fluxnet(
             scale="1D",
         )
 
-        t.index = time_index
-        df_t = pd.concat([df_t, t.rename(sitename)], axis=1)
+        transpiration_pt.index = time_index
+        df_t = pd.concat([df_t, transpiration_pt.rename(sitename)], axis=1)
         df_alpha = pd.concat([df_alpha, alpha.rename(sitename)], axis=1)
         if output_fmt == "CSV":
-            output = pd.DataFrame(data=[alpha, t]).T
+            output = pd.DataFrame(data=[alpha, transpiration_pt]).T
             output.columns = ["alpha_c", "transpiration"]
             output.to_csv(f"output/{sitename}.csv")
 
@@ -165,13 +165,13 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     # First we need to load the model and data transformation pipeline
-    model = tf.keras.models.load_model("models/model/")
-    with open("models/model/pipeline.pickle", "rb") as pipeline_file:
+    model = tf.keras.models.load_model("models/20230412_092554/model/")
+    with open("models/20230412_092554/pipeline.pickle", "rb") as pipeline_file:
         pipeline = pickle.load(pipeline_file)
-    features = ["swvl1", "swvl2", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
+    input_variables = ["swvl1", "swvl2", "vpd", "windspeed", "IGBP", "height", "LAI", "FPAR"]
 
     # We define the prediction site and the input features the model was trained for
     fluxnet_data = load_model_data.load_external(
-        path="data/fluxnet/", features=features, freq="1D"
+        path="data/fluxnet2/", features=input_variables, freq="1D"
     )
-    predict_fluxnet(model, pipeline, fluxnet_data, output_fmt="netCDF")
+    t, a = predict_fluxnet(model, pipeline, input_variables, fluxnet_data, output_fmt="netCDF")

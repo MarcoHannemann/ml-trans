@@ -249,7 +249,7 @@ def pt_inverted(ta, p, netrad, LAI, SZA, T):
 
 if __name__ == "__main__":
     """If phys_model.py is run as stand-alone, it will read training data and add results from the inverted T-models."""
-    target = "transpiration_ca"
+    target = "transpiration"
 
     in_dir = "/home/hannemam/Projects/ml-trans/data/sapfluxnet_daily"
     out_dir = f"/home/hannemam/Projects/ml-trans/data/{datetime.today().strftime('%y%m%d')}-param"

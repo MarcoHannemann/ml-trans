@@ -18,7 +18,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
-def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
+def load_tabular(path: str,
+                 features: list,
+                 target: str,
+                 freq: str
+                ) -> dict:
     """
     Loads comma seperates value files containing time series for a single location into a data dictionary.
 
