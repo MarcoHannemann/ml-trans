@@ -7,6 +7,7 @@ Can be run as stand-alone for creating training target data by inverting PT or P
 import glob
 import os
 from datetime import datetime
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,7 @@ import constants
 import solar
 
 
-def latent_heat_vaporization(ta, conversion_factor=1):
+def latent_heat_vaporization(ta: float, conversion_factor: int = 1) -> float:
     """Calculates latent heat of vaporization from air temperature (Average 2.45).
         If J kg-1 is wanted, apply conversionf factor of 10**6
     Stull, B., 1988: An Introduction to Boundary Layer Meteorology (p. 641). Kluwer Academic Publishers,
@@ -31,7 +32,7 @@ def latent_heat_vaporization(ta, conversion_factor=1):
     return (2.501 - 0.00237 * ta) * conversion_factor
 
 
-def psychrometric_constant(air_pressure, air_temperature):
+def psychrometric_constant(air_pressure: float, air_temperature: float) -> float:
     """The ratio of specific heat (Cp) of moist air at constant pressure to latent heat (Lv) of vaporization of water.
        Average about 0.4 g water/kg air K-1
     FAO Eq. 8 https://www.fao.org/3/x0490e/x0490e07.htm
@@ -45,7 +46,7 @@ def psychrometric_constant(air_pressure, air_temperature):
     )
 
 
-def latent_heat_to_evaporation(LE, ta, scale="1D"):
+def latent_heat_to_evaporation(LE: float, ta: float, scale: str = "1D"):
     """Converts latent heat flux (W m-2) to Evaporation (mm).
 
     Knauer, J., El-Madany, T.S., Zaehle, S., Migliavacca, M., 2018.
@@ -62,7 +63,7 @@ def latent_heat_to_evaporation(LE, ta, scale="1D"):
     return LE / lam * pd.to_timedelta(scale).total_seconds()
 
 
-def evaporation_to_latent_heat(ET, ta, scale="1D"):
+def evaporation_to_latent_heat(ET: float, ta: float, scale: str = "1D"):
     """Converts Evaporation (mm) to latent heat flux (W m-2).
 
     Knauer, J., El-Madany, T.S., Zaehle, S., Migliavacca, M., 2018.
@@ -79,7 +80,7 @@ def evaporation_to_latent_heat(ET, ta, scale="1D"):
     return ET * lam / pd.to_timedelta(scale).total_seconds()
 
 
-def aerodynamic_resistance(u, h, z):
+def aerodynamic_resistance(u: float, h: float, z: float) -> float:
     """Calculates aerodynamic resistance [s m-1]
 
     Lin, C., Gentine, P., Huang, Y., Guan, K., Kimm, H., & Zhou, S. (2018). Diel ecosystem conductance response to
@@ -101,7 +102,9 @@ def aerodynamic_resistance(u, h, z):
     return ga
 
 
-def net_radiation_canopy(netrad, LAI, SZA):
+def net_radiation_canopy(
+    netrad: float, LAI: float, SZA: Union[float, np.ndarray]
+) -> float:
     """Calculates the net radiation of the canopy layer by partitioning measured net radiation using exponential
     function for Priestly-Taylor model.
 
@@ -119,7 +122,7 @@ def net_radiation_canopy(netrad, LAI, SZA):
     return r_nc
 
 
-def canopy_available_energy(netrad, LAI, SZA):
+def canopy_available_energy(netrad: float, LAI: float, SZA: float) -> float:
     """Computes the available energy in the canopy Based on Beer's Law
 
     :param netrad: Net radiation [W/m²]
@@ -132,7 +135,7 @@ def canopy_available_energy(netrad, LAI, SZA):
     return Ac
 
 
-def slope_vapour_pressure_curve(ta):
+def slope_vapour_pressure_curve(ta: float) -> float:
     """Calculates the slope of the relationship between saturation vapour pressure and temperature.
     FAO Eq. 13: https://www.fao.org/3/x0490e/x0490e07.htm
 
@@ -144,17 +147,17 @@ def slope_vapour_pressure_curve(ta):
 
 
 def pm_standard(
-    gc,
-    p,
-    ta,
-    VPD,
-    netrad,
-    LAI,
-    SZA,
-    u,
-    h,
-    z,
-):
+    gc: float,
+    p: float,
+    ta: float,
+    VPD: float,
+    netrad: float,
+    LAI: float,
+    SZA: float,
+    u: float,
+    h: float,
+    z: float,
+) -> float:
     """Computes Transpiration based on Two-Layer Penman-Monteith method.
     Canopy stomatal conductance gc is estimated from stomatal conductance gs by applying the "big-leaf" model.
 
@@ -163,10 +166,10 @@ def pm_standard(
     Ding, R., Kang, S., Du, T., Hao, X., & Zhang, Y. (2014). Scaling up stomatal conductance from leaf to canopy using
         a dual-leaf model for estimating crop evapotranspiration. PloS One, 9(4), e95584.
 
-    :param gs: Canopy Conductance
+    :param gc: Canopy Conductance
     :param p: Atmospheric Pressure [kPa]
     :param ta: Air temperature [°C]
-    :param VPD: Vapor Pressure Deficit
+    :param VPD: Vapor Pressure Deficit [kPa]
     :param netrad: Net radiation [W/m²]
     :param LAI: Leaf Area Index [-]
     :param SZA: Sun Zenith Angle
@@ -186,13 +189,24 @@ def pm_standard(
     return T
 
 
-def pm_inverted(T, p, ta, VPD, netrad, LAI, SZA, u, h, z):
+def pm_inverted(
+    T: float,
+    p: float,
+    ta: float,
+    VPD: float,
+    netrad: float,
+    LAI: float,
+    SZA: Union[float, np.ndarray],
+    u: float,
+    h: float,
+    z: float,
+) -> Union[float, pd.Series]:
     """Inverted Penman-Monteith equation to calculate canopy conductance from given Transpiration.
 
     :param T: Transpiration [W/m²]
     :param p: Atmospheric Pressure [kPa]
     :param ta: Air temperature [°C]
-    :param VPD: Vapor Pressure Deficit
+    :param VPD: Vapor Pressure Deficit [kPa]
     :param netrad: Net radiation [W/m²]
     :param LAI: Leaf Area Index [-]
     :param SZA: Sun Zenith Angle
@@ -212,7 +226,9 @@ def pm_inverted(T, p, ta, VPD, netrad, LAI, SZA, u, h, z):
     return gc
 
 
-def pt_standard(ta, p, netrad, LAI, SZA, alpha_c=1.26):
+def pt_standard(
+    ta: float, p: float, netrad: float, LAI: float, SZA: float, alpha_c: float = 1.26
+) -> float:
     """Priestley-Taylor model for Transpiration. If no PT-coefficient alpha_c is given, 1.26 is used as default value
     following Cammalleri et al. 2012.
 
@@ -238,7 +254,14 @@ def pt_standard(ta, p, netrad, LAI, SZA, alpha_c=1.26):
     return T
 
 
-def pt_inverted(ta, p, netrad, LAI, SZA, T):
+def pt_inverted(
+    ta: float,
+    p: float,
+    netrad: float,
+    LAI: float,
+    SZA: Union[float, np.ndarray],
+    T: float,
+) -> Union[float, pd.Series]:
     """Inverted Priestly-Taylor equation to calculate alpha_c from given Transpiration."""
     d = slope_vapour_pressure_curve(ta)
     gamma = psychrometric_constant(air_pressure=p, air_temperature=ta)
@@ -294,7 +317,7 @@ if __name__ == "__main__":
 
         # Inversion of Penman-Monteith model to calculate canopy conductance g_c
         try:
-            gc = pm_inverted(
+            conductance = pm_inverted(
                 T=evaporation_to_latent_heat(df[target], df["t2m"]),
                 p=df["sp"],
                 ta=df["t2m"],
@@ -325,8 +348,8 @@ if __name__ == "__main__":
 
         # Name generated data from inverted models and combine with original data frame
         alpha = alpha.rename("alpha")
-        gc = gc.rename("gc")
-        df = pd.concat([df, gc], axis=1)
+        conductance = conductance.rename("gc")
+        df = pd.concat([df, conductance], axis=1)
 
         df = pd.concat([df, alpha], axis=1)
         df["alpha"].replace([np.inf, -np.inf], np.nan, inplace=True)
