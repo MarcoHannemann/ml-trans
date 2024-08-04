@@ -1,19 +1,28 @@
-import os
+"""
+load_model_data.py
+~~~~~~~~~~~~~~~~~~
+This module contains the data reading and preprocessing steps. It is imported by nn.py and handles loading, filtering,
+transforming and storing input and output data.
+"""
+
 import glob
+import os
+import pickle
+from typing import Union
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-
-# todo: filter out negative transpiration and nightime values
-# todo: add doy as columns for split data so that the doy is known after scaling
-# todo: check sklearn.preprocessing.RobustScaler for outlier detection
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
-def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
+def load_tabular(path: str,
+                 features: list,
+                 target: str,
+                 freq: str
+                ) -> dict:
     """
     Loads comma seperates value files containing time series for a single location into a data dictionary.
 
@@ -48,15 +57,17 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
         try:
             igbp = data[sitename]["IGBP"].iloc[0]
         except IndexError:
-            print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP/canopy height.")
+            print(
+                f"WARNING: {sitename} contains empty dataframe or is missing variable."
+            )
             del data[sitename]
             continue
 
         # Filter data below 0
-        data[sitename].loc[(data[sitename]['vpd'] < 0)] = np.nan
+        data[sitename].loc[(data[sitename]["vpd"] < 0)] = np.nan
         data[sitename].loc[(data[sitename][target] < 0)] = np.nan
         if ["ssr"] in features:
-            data[sitename].loc[(data[sitename]['ssr'] < 0)] = np.nan
+            data[sitename].loc[(data[sitename]["ssr"] < 50)] = np.nan
 
         if "tr_ca" in list(data[sitename].columns):
             data[sitename].drop(columns=["tr_ca"], inplace=True)
@@ -74,21 +85,6 @@ def load_tabular(path: str, features: list, target: str, freq: str) -> dict:
     return data_new
 
 
-def filter_short_timeseries(data: dict, length=365) -> dict:
-    """Removes sites with time series shorter than specified length. Applied to not involve sites which don't catch
-    their full seasonal cycle.
-
-    :param data: dictionary containing site dataframes
-    :param length: minimum amount of timesteps in time series
-    :return: new dictionary with short time series sites removed
-    """
-    data_filtered = {}
-    for site, df in data.items():
-        if len(df) > length:
-            data_filtered[site] = df
-    return data_filtered
-
-
 def dict_to_df(data: dict) -> pd.DataFrame:
     """Summarizes all sites and convert dict to single dataframe. Temporal spatiotemporal information will be lost.
 
@@ -101,13 +97,20 @@ def dict_to_df(data: dict) -> pd.DataFrame:
 
 def filter_data(data: pd.DataFrame) -> pd.DataFrame:
     """Filters out nighttime data and Transpiration lower zero
-
+    # todo: Check if function is required, should have happened in phys_model.py
     :param data: training data
     :return: data: training data
     """
-    data = data.loc[data["vpd"] > 0]
-    data = data.loc[data["ssr"] > 50]
-    data = data.loc[data["tr"] > 0.01]
+    try:
+        data = data.loc[data["alpha"] > 0]
+    except KeyError:
+        try:
+            data = data.loc[data["gc"] > 0]
+            data = data.loc[data["gc"] < 200]
+        except KeyError:
+            pass
+    # data = data.loc[data["vpd"] > 0]
+    # data = data.loc[data["alpha"] > 50]
     return data.reset_index(drop=True)
 
 
@@ -124,7 +127,7 @@ def drop_features(df: pd.DataFrame, features: list, target: list) -> pd.DataFram
     return df[features + target]
 
 
-def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> tuple:
+def split_data(data: pd.DataFrame, target="transpiration", random_state=None) -> tuple:
     """Splits the data into training, testing, validation.
 
 
@@ -133,19 +136,28 @@ def split_data(data: pd.DataFrame, target="transpiration", random_state=42) -> t
     :param random_state: Used to make model reproducable
     :return: tuple containg train, test, val data for input x and target y
     """
-    x_train, x_test, y_train, y_test = train_test_split(data.drop(columns=target), data[target],
-                                                        train_size=0.7,)
-    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.66, random_state=random_state)
+    x_train, x_test, y_train, y_test = train_test_split(
+        data.drop(columns=target), data[target], train_size=0.8, random_state=5
+    )
+    x_train, x_val, y_train, y_val = train_test_split(
+        x_train, y_train, test_size=0.125, random_state=random_state
+    )
 
     return x_train, x_test, x_val, y_train, y_test, y_val
 
 
-def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
-                   y_train: np.array, y_test: np.array, y_val: np.array,
-                   features: list, ext_prediction: str = None, freq: str = "1D") -> dict:
+def transform_data(
+    x_train: np.array,
+    x_test: np.array,
+    x_val: np.array,
+    y_train: np.array,
+    y_test: np.array,
+    y_val: np.array,
+    features: list,
+    timestamp: str,
+) -> dict:
     """Transforms and fits data. Includes normalization and encoding.
 
-    :param ext_prediction: If path is specified, external locations are transformed for predictions
     :param x_train: Training input data
     :param x_test: Testing input data
     :param x_val: Validation input data
@@ -153,8 +165,7 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     :param y_test: Testing target
     :param y_val: Validation target
     :param features: List of feature names incoroporated in model
-    :param ext_prediction: Path to directory with external sites (CSV)
-    :param freq: Temporal resolution 1D | 1H
+    :param timestamp: Date and Time of model run
     :return: dictionary containing transformed training data and untransformed samples
     """
 
@@ -167,52 +178,51 @@ def transform_data(x_train: np.array, x_test: np.array, x_val: np.array,
     # We use OneHotEncoder() for the categorical feature PFT, since we want to avoid any ranking in Land Cover Classes.
     # Instead of IGBP = {1..n}, we end up with one feature for each IGBP class set to 0 or 1.
 
-    num_pipeline = Pipeline([
-        ('minmax_scaler', StandardScaler())
-    ])
-    full_pipeline = ColumnTransformer([
-        ('num', num_pipeline, num_attributes),
-        ('cat', OneHotEncoder(), cat_attributes)
-    ])
+    num_pipeline = Pipeline([("minmax_scaler", StandardScaler())])
+    full_pipeline = ColumnTransformer(
+        [
+            ("num", num_pipeline, num_attributes),
+            ("cat", OneHotEncoder(), cat_attributes),
+        ]
+    )
 
     # apply pipeline, fit only to training data
     df_train = full_pipeline.fit_transform(x_train)
     df_test = full_pipeline.transform(x_test)
     df_val = full_pipeline.transform(x_val)
 
+    # Store transformation pipeline to disk
+    with open(f"models/{timestamp}/pipeline.pickle", "wb") as output_file:
+        pickle.dump(full_pipeline, output_file)
+
     # Extract new feature names from OneHotEncoder().categories_ ('IGBP' -> ['DBF, 'EBF', ...])
     new_categories = full_pipeline.transformers_[1][1].categories_[0].tolist()
 
     # convert numpy array back to data frame
     df_train = pd.DataFrame(df_train, columns=num_attributes + new_categories)
-    df_train.columns = df_train.columns.map(''.join)
+    df_train.columns = df_train.columns.map("".join)
     df_test = pd.DataFrame(df_test, columns=num_attributes + new_categories)
-    df_test.columns = df_test.columns.map(''.join)
+    df_test.columns = df_test.columns.map("".join)
     df_val = pd.DataFrame(df_val, columns=num_attributes + new_categories)
-    df_val.columns = df_val.columns.map(''.join)
+    df_val.columns = df_val.columns.map("".join)
 
     # write out transformed data to CSV for analysis purpose (not used in neural network)
-    df_train.to_csv('output/training/train_samples.csv', index=False)
-    df_test.to_csv('output/training/test_samples.csv', index=False)
-    df_val.to_csv('output/training/val_samples.csv', index=False)
+    df_train.to_csv("output/training/train_samples.csv", index=False)
+    df_test.to_csv("output/training/test_samples.csv", index=False)
+    df_val.to_csv("output/training/val_samples.csv", index=False)
 
-    y_train.to_csv('output/training/train_lables.csv', index=False)
-    y_test.to_csv('output/training/test_lables.csv', index=False)
-    y_val.to_csv('output/training/val_lables.csv', index=False)
-
-    # if external prediction is activated, external input features are transformed here
-    if ext_prediction is not None:
-        ext_data = load_external(ext_prediction, features=features, freq=freq)
-        for sitename, df in ext_data.items():
-            df_transformed = df.reset_index(drop=True)
-            df_transformed = pd.DataFrame(full_pipeline.transform(df_transformed),
-                                          columns=num_attributes + new_categories)
-            df_transformed.to_csv(f"output/fluxnet/{sitename}.csv", index=False)
-
-    return {"Xtrain": np.array(df_train), "Ytrain": np.expand_dims(np.array(y_train), axis=1),
-            "Xtest": np.array(df_test), "Ytest": np.expand_dims(np.array(y_test), axis=1),
-            "Xval": np.array(df_val), "Yval": np.expand_dims(np.array(y_val), axis=1),
-            "untransformed": {"Xtrain": x_train, "Xtest": x_test, "Xval": x_val}}
+    y_train.to_csv("output/training/train_lables.csv", index=False)
+    y_test.to_csv("output/training/test_lables.csv", index=False)
+    y_val.to_csv("output/training/val_lables.csv", index=False)
+    return {
+        "Xtrain": np.array(df_train),
+        "Ytrain": np.expand_dims(np.array(y_train), axis=1),
+        "Xtest": np.array(df_test),
+        "Ytest": np.expand_dims(np.array(y_test), axis=1),
+        "Xval": np.array(df_val),
+        "Yval": np.expand_dims(np.array(y_val), axis=1),
+        "untransformed": {"Xtrain": x_train, "Xtest": x_test, "Xval": x_val},
+    }
 
 
 def load_external(path: str, features: list, freq: str = "1D") -> dict:
@@ -226,10 +236,26 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
     ext_data = {}
     for csv_file in csv_files:
         sitename = os.path.splitext(os.path.basename(csv_file))[0]
-        ext_data[sitename] = pd.read_csv(csv_file, index_col=0, parse_dates=True)
+        ext_data[sitename] = pd.read_csv(
+            csv_file,
+            index_col=0,
+            parse_dates=True,
+            dtype={
+                "ssr": np.float64,
+                "windspeed": np.float64,
+                "sp": np.float64,
+                "t2m": np.float64,
+                "vpd": np.float64,
+                "swvl1": np.float64,
+                "swvl2": np.float64,
+                "height": np.float64,
+                "LAI": np.float64,
+                "FPAR": np.float64,
+            },
+        )
 
         try:
-            igbp = ext_data[sitename]["IGBP"].iloc[0]
+            igbp = ext_data[sitename]["IGBP"].dropna().iloc[0]
         except IndexError:
             print(f"WARNING: {sitename} contains empty dataframe or is missing IGBP.")
             del ext_data[sitename]
@@ -245,31 +271,38 @@ def load_external(path: str, features: list, freq: str = "1D") -> dict:
         # Set IGBP column to PFT
         ext_data[sitename]["IGBP"] = igbp
 
-        # Drop features not used in training
-        ext_data[sitename] = drop_features(ext_data[sitename], features+["IGBP"], target=[])
-
     # Filter data by PFT and time period
     filtered_data = {}
     for sitename, df in ext_data.items():
-        if df["IGBP"].unique().item() in ['EBF', 'ENF', 'DBF', 'WSA', 'SAV', 'MF', 'DNF']:
+        # Filter out PFTs not used during training
+        if df["IGBP"].unique().item() in ["EBF", "ENF", "DBF", "SAV", "MF", "DNF"]:
             # 2002-07-04: Start of MODIS data
-            filtered_data[sitename] = df["2002-07-04": "2007-12-31"]
+            filtered_data[sitename] = df["2002-07-04":"2015-12-31"]
         else:
             continue
     return filtered_data
 
 
-def load(path_csv: str, freq: str, features: list, blacklist=False, target="transpiration",
-         external_prediction: str = None) -> tuple:
+def load(
+    path_csv: str,
+    freq: str,
+    features: list,
+    timestamp: str,
+    blacklist: Union[bool, str] = False,
+    target="transpiration",
+    seed: int = 42,
+) -> tuple:
     """Loads the data from passed path and does preprocessing for the neural network.
 
-    :param external_prediction: If path is specified, external locations are transformed for prediction
     :param path_csv: Directory containing CSV for point locaions
     :param freq: Temporal resolution. Currently only "1D" supported
     :param features: List with input variables to be used
+    :param timestamp: Date and Time of model run
     :param blacklist: If True, sites specified in metadata are removed
     :param target: Name of target variable (transpiration|gc|alpha)
+    :param seed: random state for splitting
     :return train_data: Dictionary with preprocessed training data
+
     """
 
     # Create metadata dictionary
@@ -279,35 +312,36 @@ def load(path_csv: str, freq: str, features: list, blacklist=False, target="tran
     # load tabular point data
     sfn_data = load_tabular(path_csv, features, target=target, freq=freq)
 
-    # filter out time series shorter than 1 year so site covers at least one full seasonal cycle
-    # sfn_data = filter_short_timeseries(sfn_data)
-
-    # optional: Read a "blacklist/whitelist" to exclude sites from training
+    # optional: Read a "blacklist" to exclude sites from training
     if isinstance(blacklist, str):
-        site_selection = pd.read_csv(blacklist, index_col='si_code')
-        site_selection = list(site_selection.loc[site_selection['exclude'] == 0].index)
+        site_selection = pd.read_csv(blacklist, index_col="si_code")
+        site_selection = list(site_selection.loc[site_selection["exclude"] == 0].index)
         forbidden_sites = [site for site in sfn_data.keys() if site in site_selection]
         for site in forbidden_sites:
             del sfn_data[site]
 
-    # Store metadata
+    # set metadata: Site info
     metadata["site_info"]["n_sites"] = len(sfn_data)
     metadata["site_info"]["sitenames"] = sorted(list(sfn_data.keys()))
-    # metadata["site_info"]["ecosystems"] = [arr.item() for arr in np.unique(([data["IGBP"].unique()
-    #                                                                        for data in sfn_data.values()]))]
+
+    # set metadata: Model setup
     metadata["setup"]["frequency"] = freq
     metadata["setup"]["target"] = target
     metadata["setup"]["features"] = features
 
     # Convert dictionary of sites to single dataframe. Geographic information will be lost from here.
     sfn_data = dict_to_df(sfn_data)
+
     # Filter out data (e.g. T < 0 mm, net radiation < 50 W/m2)
-    # sfn_data = filter_data(sfn_data)
+    sfn_data = filter_data(sfn_data)
 
     # Shuffle data randomly and split into training, testing, validation. Temporal information will be lost from here.
-    x_train, x_test, x_val, y_train, y_test, y_val = split_data(sfn_data, target=target)
+    x_train, x_test, x_val, y_train, y_test, y_val = split_data(
+        sfn_data, target=target, random_state=seed
+    )
 
     # Scale and encode data for neural network
-    train_data = transform_data(x_train, x_test, x_val, y_train, y_test, y_val,
-                                features, ext_prediction=external_prediction, freq=freq)
+    train_data = transform_data(
+        x_train, x_test, x_val, y_train, y_test, y_val, features, timestamp=timestamp
+    )
     return train_data, metadata

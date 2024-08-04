@@ -1,0 +1,268 @@
+site;country;site_name;FLUXNET2015;FLUXNET-CH4;lat;lon;elev;igbp;mat;map;region;continent
+AR-SLu;Argentina;San Luis;CC-BY-4.0;;-33.4648;-66.4598;;MF;;400.0;Americas;South America
+AR-Vir;Argentina;Virasoro;CC-BY-4.0;;-28.2395;-56.1886;;ENF;;;Americas;South America
+AT-Neu;Austria;Neustift;CC-BY-4.0;CC-BY-4.0;47.1167;11.3175;970.0;GRA;6.5;852.0;Europe;Europe
+AU-ASM;Australia;Alice Springs;CC-BY-4.0;;-22.283;133.249;;SAV;;;Oceania;Oceania
+AU-Ade;Australia;Adelaide River;CC-BY-4.0;;-13.0769;131.1178;;WSA;;;Oceania;Oceania
+AU-Cpr;Australia;Calperum;CC-BY-4.0;;-34.0021;140.5891;;SAV;;;Oceania;Oceania
+AU-Cum;Australia;Cumberland Plain;CC-BY-4.0;;-33.6152;150.7236;;EBF;;;Oceania;Oceania
+AU-DaP;Australia;Daly River Savanna;CC-BY-4.0;;-14.0633;131.3181;;GRA;27.25;983.78;Oceania;Oceania
+AU-DaS;Australia;Daly River Cleared;CC-BY-4.0;;-14.1593;131.3881;;SAV;27.22;975.82;Oceania;Oceania
+AU-Dry;Australia;Dry River;CC-BY-4.0;;-15.2588;132.3706;;SAV;;;Oceania;Oceania
+AU-Emr;Australia;Emerald;CC-BY-4.0;;-23.8587;148.4746;;GRA;;;Oceania;Oceania
+AU-Fog;Australia;Fogg Dam;CC-BY-4.0;;-12.5452;131.3072;;WET;27.02;1323.69;Oceania;Oceania
+AU-GWW;Australia;Great Western Woodlands, Western Australia, Australia;CC-BY-4.0;;-30.1913;120.6541;;SAV;;;Oceania;Oceania
+AU-Gin;Australia;Gingin;CC-BY-4.0;;-31.3764;115.7138;;WSA;;;Oceania;Oceania
+AU-How;Australia;Howard Springs;CC-BY-4.0;;-12.4943;131.1523;;WSA;27.01;1449.35;Oceania;Oceania
+AU-Lox;Australia;Loxton;CC-BY-4.0;;-34.4704;140.6551;;DBF;;;Oceania;Oceania
+AU-RDF;Australia;Red Dirt Melon Farm, Northern Territory;CC-BY-4.0;;-14.5636;132.4776;;WSA;;;Oceania;Oceania
+AU-Rig;Australia;Riggs Creek;CC-BY-4.0;;-36.6499;145.5759;;GRA;;;Oceania;Oceania
+AU-Rob;Australia;Robson Creek, Queensland, Australia;CC-BY-4.0;;-17.1175;145.6301;;EBF;;;Oceania;Oceania
+AU-Stp;Australia;Sturt Plains;CC-BY-4.0;;-17.1507;133.3502;;GRA;;;Oceania;Oceania
+AU-TTE;Australia;Ti Tree East;CC-BY-4.0;;-22.287;133.64;;GRA;;;Oceania;Oceania
+AU-Tum;Australia;Tumbarumba;CC-BY-4.0;;-35.6566;148.1517;1200.0;EBF;10.72;1159.01;Oceania;Oceania
+AU-Wac;Australia;Wallaby Creek;CC-BY-4.0;;-37.4259;145.1878;;EBF;12.76;1105.59;Oceania;Oceania
+AU-Whr;Australia;Whroo;CC-BY-4.0;;-36.6732;145.0294;;EBF;;;Oceania;Oceania
+AU-Wom;Australia;Wombat;CC-BY-4.0;;-37.4222;144.0944;705.0;EBF;;;Oceania;Oceania
+AU-Ync;Australia;Jaxa;CC-BY-4.0;;-34.9893;146.2907;;GRA;;;Oceania;Oceania
+BE-Bra;Belgium;Brasschaat;CC-BY-4.0;;51.3076;4.5198;16.0;MF;9.8;750.0;Europe;Europe
+BE-Lon;Belgium;Lonzee;CC-BY-4.0;;50.5516;4.7462;167.0;CRO;10.0;800.0;Europe;Europe
+BE-Vie;Belgium;Vielsalm;CC-BY-4.0;;50.3049;5.9981;493.0;MF;7.8;1062.0;Europe;Europe
+BR-Npw;Brazil;Northern Pantanal Wetland;;CC-BY-4.0;-16.498;-56.412;120.0;WSA;24.9;1486.0;Americas;South America
+BR-Sa1;Brazil;Santarem-Km67-Primary Forest;CC-BY-4.0;;-2.8567;-54.9589;88.0;EBF;26.13;2074.79;Americas;South America
+BR-Sa3;Brazil;Santarem-Km83-Logged Forest;CC-BY-4.0;;-3.018;-54.9714;100.0;EBF;26.12;2043.77;Americas;South America
+BW-Gum;Botswana;Guma;;CC-BY-4.0;-18.9647;22.3711;950.0;WET;21.0;460.0;Africa;Africa
+BW-Nxr;Botswana;Nxaraga;;CC-BY-4.0;-19.5481;23.1792;950.0;GRA;21.0;460.0;Africa;Africa
+CA-Gro;Canada;Ontario - Groundhog River, Boreal Mixedwood Forest;CC-BY-4.0;;48.2167;-82.1556;340.0;MF;1.3;831.0;Americas;North America
+CA-Man;Canada;Manitoba - Northern Old Black Spruce (former BOREAS Northern Study Area);CC-BY-4.0;;55.8796;-98.4808;259.0;ENF;-3.2;520.0;Americas;North America
+CA-NS1;Canada;UCI-1850 burn site;CC-BY-4.0;;55.8792;-98.4839;260.0;ENF;-2.89;500.29;Americas;North America
+CA-NS2;Canada;UCI-1930 burn site;CC-BY-4.0;;55.9058;-98.5247;260.0;ENF;-2.88;499.82;Americas;North America
+CA-NS3;Canada;UCI-1964 burn site;CC-BY-4.0;;55.9117;-98.3822;260.0;ENF;-2.87;502.22;Americas;North America
+CA-NS4;Canada;UCI-1964 burn site wet;CC-BY-4.0;;55.9144;-98.3806;260.0;ENF;-2.87;502.22;Americas;North America
+CA-NS5;Canada;UCI-1981 burn site;CC-BY-4.0;;55.8631;-98.485;260.0;ENF;-2.86;500.34;Americas;North America
+CA-NS6;Canada;UCI-1989 burn site;CC-BY-4.0;;55.9167;-98.9644;244.0;OSH;-3.08;495.37;Americas;North America
+CA-NS7;Canada;UCI-1998 burn site;CC-BY-4.0;;56.6358;-99.9483;297.0;OSH;-3.52;483.27;Americas;North America
+CA-Oas;Canada;Saskatchewan - Western Boreal, Mature Aspen;CC-BY-4.0;;53.6289;-106.1978;530.0;DBF;0.34;428.53;Americas;North America
+CA-Obs;Canada;Saskatchewan - Western Boreal, Mature Black Spruce;CC-BY-4.0;;53.9872;-105.1178;628.94;ENF;0.79;405.6;Americas;North America
+CA-Qfo;Canada;Quebec - Eastern Boreal, Mature Black Spruce;CC-BY-4.0;;49.6925;-74.3421;382.0;ENF;-0.36;962.32;Americas;North America
+CA-SCB;Canada;Scotty Creek Bog;;CC-BY-4.0;61.3089;-121.2984;280.0;WET;-2.8;388.0;Americas;North America
+CA-SCC;Canada;Scotty Creek Landscape;;CC-BY-4.0;61.3079;-121.2992;285.0;ENF;-2.8;387.6;Americas;North America
+CA-SF1;Canada;Saskatchewan - Western Boreal, forest burned in 1977;CC-BY-4.0;;54.485;-105.8176;536.0;ENF;0.4;470.0;Americas;North America
+CA-SF2;Canada;Saskatchewan - Western Boreal, forest burned in 1989;CC-BY-4.0;;54.2539;-105.8775;520.0;ENF;0.4;470.0;Americas;North America
+CA-SF3;Canada;Saskatchewan - Western Boreal, forest burned in 1998;CC-BY-4.0;;54.0916;-106.0053;540.0;OSH;0.4;470.0;Americas;North America
+CA-TP1;Canada;Ontario - Turkey Point 2002 Plantation White Pine;CC-BY-4.0;;42.6609;-80.5595;265.0;ENF;8.0;1036.0;Americas;North America
+CA-TP2;Canada;Ontario - Turkey Point 1989 Plantation White Pine;CC-BY-4.0;;42.7744;-80.4588;212.0;ENF;8.0;1036.0;Americas;North America
+CA-TP3;Canada;Ontario - Turkey Point 1974 Plantation White Pine;CC-BY-4.0;;42.7068;-80.3483;184.0;ENF;8.0;1036.0;Americas;North America
+CA-TP4;Canada;Ontario - Turkey Point 1939 Plantation White Pine;CC-BY-4.0;;42.7102;-80.3574;184.0;ENF;8.0;1036.0;Americas;North America
+CA-TPD;Canada;Ontario - Turkey Point Mature Deciduous;CC-BY-4.0;;42.6353;-80.5577;260.0;DBF;8.0;1036.0;Americas;North America
+CG-Tch;Republic of Congo;Tchizalamou;CC-BY-4.0;;-4.2892;11.6564;82.0;SAV;25.7;1150.0;Africa;Africa
+CH-Cha;Switzerland;Chamau;CC-BY-4.0;CC-BY-4.0;47.2102;8.4104;393.0;GRA;9.5;1136.0;Europe;Europe
+CH-Dav;Switzerland;Davos;CC-BY-4.0;CC-BY-4.0;46.8153;9.8559;1639.0;ENF;2.8;1062.0;Europe;Europe
+CH-Fru;Switzerland;Früebüel;CC-BY-4.0;;47.1158;8.5378;982.0;GRA;7.2;1651.0;Europe;Europe
+CH-Lae;Switzerland;Laegern;CC-BY-4.0;;47.4783;8.3644;689.0;MF;8.3;1100.0;Europe;Europe
+CH-Oe1;Switzerland;Oensingen grassland;CC-BY-4.0;;47.2858;7.7319;450.0;GRA;9.0;1100.0;Europe;Europe
+CH-Oe2;Switzerland;Oensingen crop;CC-BY-4.0;CC-BY-4.0;47.2864;7.7337;452.0;CRO;9.8;1155.0;Europe;Europe
+CN-Cha;China;Changbaishan;CC-BY-4.0;;42.4025;128.0958;;MF;2.16;663.59;Asia;Asia
+CN-Cng;China;Changling;CC-BY-4.0;;44.5934;123.5092;;GRA;;;Asia;Asia
+CN-Dan;China;Dangxiong;CC-BY-4.0;;30.4978;91.0664;;GRA;-1.54;246.88;Asia;Asia
+CN-Din;China;Dinghushan;CC-BY-4.0;;23.1733;112.5361;;EBF;19.64;1618.1;Asia;Asia
+CN-Du2;China;Duolun_grassland (D01);CC-BY-4.0;;42.0467;116.2836;;GRA;2.01;318.96;Asia;Asia
+CN-Du3;China;Duolun Degraded Meadow;CC-BY-4.0;;42.0551;116.2809;;GRA;;;Asia;Asia
+CN-Ha2;China;Haibei Shrubland;CC-BY-4.0;;37.6086;101.3269;;WET;;;Asia;Asia
+CN-HaM;China;Haibei Alpine Tibet site;CC-BY-4.0;;37.37;101.18;;GRA;;;Asia;Asia
+CN-Hgu;China;Hongyuan;;CC-BY-4.0;32.8453;102.59;3500.0;GRA;1.5;747.0;Asia;Asia
+CN-Qia;China;Qianyanzhou;CC-BY-4.0;;26.7414;115.0581;;ENF;18.95;1466.75;Asia;Asia
+CN-Sw2;China;Siziwang Grazed (SZWG);CC-BY-4.0;;41.7902;111.8971;;GRA;;;Asia;Asia
+CZ-BK1;Czech Republic;Bily Kriz forest;CC-BY-4.0;;49.5021;18.5369;875.0;ENF;6.7;1316.0;Europe;Europe
+CZ-BK2;Czech Republic;Bily Kriz grassland;CC-BY-4.0;;49.4944;18.5429;855.0;GRA;6.7;1316.0;Europe;Europe
+CZ-wet;Czech Republic;Trebon (CZECHWET);CC-BY-4.0;;49.0247;14.7704;426.0;WET;7.7;604.0;Europe;Europe
+DE-Akm;Germany;Anklam;CC-BY-4.0;;53.8662;13.6834;-1.0;WET;8.7;558.0;Europe;Europe
+DE-Dgw;Germany;Dagowsee;;CC-BY-4.0;53.1514;13.0543;60.0;WAT;9.02;602.9;Europe;Europe
+DE-Geb;Germany;Gebesee;CC-BY-4.0;;51.0997;10.9146;161.5;CRO;8.5;470.0;Europe;Europe
+DE-Gri;Germany;Grillenburg;CC-BY-4.0;;50.95;13.5126;385.0;GRA;7.8;901.0;Europe;Europe
+DE-Hai;Germany;Hainich;CC-BY-4.0;;51.0792;10.4522;430.0;DBF;8.3;720.0;Europe;Europe
+DE-Hte;Germany;Huetelmoor;;CC-BY-4.0;54.2103;12.1761;0.2;WET;9.2;645.0;Europe;Europe
+DE-Kli;Germany;Klingenberg;CC-BY-4.0;;50.8931;13.5224;478.0;CRO;7.6;842.0;Europe;Europe
+DE-Lkb;Germany;Lackenberg;CC-BY-4.0;;49.0996;13.3047;1308.0;ENF;4.0;1599.0;Europe;Europe
+DE-Lnf;Germany;Leinefelde;CC-BY-4.0;;51.3282;10.3678;451.0;DBF;6.96;894.6;Europe;Europe
+DE-Obe;Germany;Oberbärenburg;CC-BY-4.0;;50.7867;13.7213;734.0;ENF;5.5;996.0;Europe;Europe
+DE-RuR;Germany;Rollesbroich;CC-BY-4.0;;50.6219;6.3041;514.7;GRA;7.7;1033.0;Europe;Europe
+DE-RuS;Germany;Selhausen Juelich;CC-BY-4.0;;50.8659;6.4471;102.755;CRO;10.0;700.0;Europe;Europe
+DE-Seh;Germany;Selhausen;CC-BY-4.0;;50.8706;6.4497;103.0;CRO;9.9;693.0;Europe;Europe
+DE-SfN;Germany;Schechenfilz Nord;CC-BY-4.0;CC-BY-4.0;47.8064;11.3275;590.0;WET;8.6;1127.0;Europe;Europe
+DE-Spw;Germany;Spreewald;CC-BY-4.0;;51.8922;14.0337;61.0;WET;8.7;558.0;Europe;Europe
+DE-Tha;Germany;Tharandt;CC-BY-4.0;;50.9626;13.5651;385.0;ENF;8.2;843.0;Europe;Europe
+DE-Zrk;Germany;Zarnekow;CC-BY-4.0;CC-BY-4.0;53.8759;12.889;0.0;WET;8.7;584.0;Europe;Europe
+DK-Eng;Denmark;Enghave;CC-BY-4.0;;55.6905;12.1918;10.0;GRA;8.0;613.0;Europe;Europe
+DK-Fou;Denmark;Foulum;CC-BY-4.0;;56.4842;9.5872;51.0;CRO;8.0;;Europe;Europe
+DK-Sor;Denmark;Soroe;CC-BY-4.0;;55.4859;11.6446;40.0;DBF;8.2;660.0;Europe;Europe
+ES-Amo;Spain;Amoladeras;CC-BY-4.0;;36.8336;-2.2523;58.0;OSH;;0.0;Europe;Europe
+ES-LJu;Spain;Llano de los Juanes;CC-BY-4.0;;36.9266;-2.7521;1600.0;OSH;16.0;400.0;Europe;Europe
+ES-LgS;Spain;Laguna Seca;CC-BY-4.0;;37.0979;-2.9658;2267.0;OSH;;;Europe;Europe
+ES-Ln2;Spain;Lanjaron-Salvage logging;CC-BY-4.0;;36.9695;-3.4758;2249.0;OSH;;;Europe;Europe
+FI-Hyy;Finland;Hyytiala;CC-BY-4.0;CC-BY-4.0;61.8474;24.2948;181.0;ENF;3.8;709.0;Europe;Europe
+FI-Jok;Finland;Jokioinen;CC-BY-4.0;;60.8986;23.5134;109.0;CRO;4.6;627.0;Europe;Europe
+FI-Let;Finland;Lettosuo;CC-BY-4.0;;60.6418;23.9595;111.0;ENF;4.6;627.0;Europe;Europe
+FI-Lom;Finland;Lompolojankka;CC-BY-4.0;CC-BY-4.0;67.9972;24.2092;274.0;WET;-1.4;484.0;Europe;Europe
+FI-Si2;Finland;Siikaneva-2 Bog;;CC-BY-4.0;61.8372;24.1967;160.0;WET;3.5;701.0;Europe;Europe
+FI-Sii;Finland;Siikaneva;;CC-BY-4.0;61.8327;24.1928;160.0;WET;3.5;701.0;Europe;Europe
+FI-Sod;Finland;Sodankyla;CC-BY-4.0;;67.3624;26.6386;180.0;ENF;-1.0;500.0;Europe;Europe
+FR-Fon;France;Fontainebleau-Barbeau;CC-BY-4.0;;48.4764;2.7801;103.0;DBF;10.2;720.0;Europe;Europe
+FR-Gri;France;Grignon;CC-BY-4.0;;48.8442;1.9519;125.0;CRO;12.0;650.0;Europe;Europe
+FR-LBr;France;Le Bray;CC-BY-4.0;;44.7171;-0.7693;61.0;ENF;13.6;900.0;Europe;Europe
+FR-LGt;France;La Guette;;CC-BY-4.0;47.3229;2.2841;;WET;;;Europe;Europe
+FR-Pue;France;Puechabon;CC-BY-4.0;;43.7413;3.5957;270.0;EBF;13.5;883.0;Europe;Europe
+GF-Guy;French Guyana;Guyaflux (French Guiana);CC-BY-4.0;;5.2788;-52.9249;48.0;EBF;25.7;3041.0;Americas;South America
+GH-Ank;Ghana;Ankasa;CC-BY-4.0;;5.2685;-2.6942;124.0;EBF;26.0;1900.0;Africa;Africa
+GL-NuF;Greenland;Nuuk Fen;CC-BY-4.0;;64.1308;-51.3861;50.0;WET;-1.4;750.0;Americas;North America
+GL-ZaF;Greenland;Zackenberg Fen;CC-BY-4.0;;74.4814;-20.5545;38.0;WET;-9.0;211.0;Americas;North America
+GL-ZaH;Greenland;Zackenberg Heath;CC-BY-4.0;;74.4733;-20.5503;38.0;GRA;-9.0;211.0;Americas;North America
+HK-MPM;Hong Kong;Mai Po Mangrove;;CC-BY-4.0;22.4982;114.0292;-1.0;EBF;23.3;1400.0;Asia;Asia
+ID-Pag;Indonesia;Palangkaraya undrained forest;;CC-BY-4.0;-2.32;113.9;30.0;EBF;26.2;2546.0;Asia;Asia
+IT-BCi;Italy;Borgo Cioffi;CC-BY-4.0;CC-BY-4.0;40.5237;14.9574;20.0;CRO;18.0;600.0;Europe;Europe
+IT-CA1;Italy;Castel d'Asso1;CC-BY-4.0;;42.3804;12.0266;200.0;DBF;14.0;766.0;Europe;Europe
+IT-CA2;Italy;Castel d'Asso2;CC-BY-4.0;;42.3772;12.026;200.0;CRO;14.0;766.0;Europe;Europe
+IT-CA3;Italy;Castel d'Asso3;CC-BY-4.0;;42.38;12.0222;197.0;DBF;14.0;766.0;Europe;Europe
+IT-Cas;Italy;Castellaro;;CC-BY-4.0;45.07;8.7175;89.0;CRO;11.9;;Europe;Europe
+IT-Col;Italy;Collelongo;CC-BY-4.0;;41.8494;13.5881;1560.0;DBF;6.3;1180.0;Europe;Europe
+IT-Cp2;Italy;Castelporziano2;CC-BY-4.0;;41.7043;12.3573;19.0;EBF;15.2;805.0;Europe;Europe
+IT-Cpz;Italy;Castelporziano;CC-BY-4.0;;41.7052;12.3761;68.0;EBF;15.6;780.0;Europe;Europe
+IT-Isp;Italy;Ispra ABC-IS;CC-BY-4.0;;45.8126;8.6336;210.0;DBF;12.2;1300.0;Europe;Europe
+IT-La2;Italy;Lavarone2;CC-BY-4.0;;45.9542;11.2853;1350.0;ENF;7.2;1150.0;Europe;Europe
+IT-Lav;Italy;Lavarone;CC-BY-4.0;;45.9562;11.2813;1353.0;ENF;7.8;1291.0;Europe;Europe
+IT-MBo;Italy;Monte Bondone;CC-BY-4.0;;46.0147;11.0458;1550.0;GRA;5.1;1214.0;Europe;Europe
+IT-Noe;Italy;Arca di Noe - Le Prigionette;CC-BY-4.0;;40.6062;8.1517;25.0;CSH;15.9;588.0;Europe;Europe
+IT-PT1;Italy;Parco Ticino forest;CC-BY-4.0;;45.2009;9.061;60.0;DBF;12.7;984.0;Europe;Europe
+IT-Ren;Italy;Renon;CC-BY-4.0;;46.5869;11.4337;1730.0;ENF;4.7;809.3;Europe;Europe
+IT-Ro1;Italy;Roccarespampani 1;CC-BY-4.0;;42.4081;11.93;235.0;DBF;15.15;876.2;Europe;Europe
+IT-Ro2;Italy;Roccarespampani 2;CC-BY-4.0;;42.3903;11.9209;160.0;DBF;15.15;876.2;Europe;Europe
+IT-SR2;Italy;San Rossore 2;CC-BY-4.0;;43.732;10.2909;4.0;ENF;14.2;920.0;Europe;Europe
+IT-SRo;Italy;San Rossore;CC-BY-4.0;;43.7279;10.2844;6.0;ENF;14.2;920.0;Europe;Europe
+IT-Tor;Italy;Torgnon;CC-BY-4.0;;45.8444;7.5781;2160.0;GRA;2.9;920.0;Europe;Europe
+JP-BBY;Japan;Bibai bog;;CC-BY-4.0;43.323;141.8107;;WET;;;Asia;Asia
+JP-MBF;Japan;Moshiri Birch Forest Site;CC-BY-4.0;;44.3869;142.3186;;DBF;;;Asia;Asia
+JP-Mse;Japan;Mase rice paddy field;;CC-BY-4.0;36.0539;140.0269;;CRO;;;Asia;Asia
+JP-SMF;Japan;Seto Mixed Forest Site;CC-BY-4.0;;35.2617;137.0788;;MF;;;Asia;Asia
+JP-SwL;Japan;Suwa Lake;;CC-BY-4.0;36.0466;138.1084;;WAT;;;Asia;Asia
+KR-CRK;Republic of Korea;Cheorwon Rice paddy;;CC-BY-4.0;38.2013;127.2506;182.0;CRO;11.2;1180.9;Asia;Asia
+MY-MLM;Myanmar;Maludam National Park;;CC-BY-4.0;1.4536;111.1495;;EBF;;;Asia;Asia
+MY-PSO;Myanmar;Pasoh Forest Reserve (PSO);CC-BY-4.0;;2.973;102.3062;;EBF;;;Asia;Asia
+NL-Hor;Netherlands;Horstermeer;CC-BY-4.0;CC-BY-4.0;52.2403;5.0713;2.2;GRA;10.0;800.0;Europe;Europe
+NL-Loo;Netherlands;Loobos;CC-BY-4.0;;52.1666;5.7436;25.0;ENF;9.8;786.0;Europe;Europe
+NZ-Kop;New Zealand;Kopuatai;;CC-BY-4.0;-37.3879;175.5539;;EBF;;;Oceania;Oceania
+PA-SPn;Panama;Sardinilla Plantation;CC-BY-4.0;;9.3181;-79.6346;78.0;DBF;26.5;2350.0;Americas;North America
+PA-SPs;Panama;Sardinilla-Pasture;CC-BY-4.0;;9.3138;-79.6314;68.0;GRA;26.5;2350.0;Americas;North America
+PH-RiF;Philippines;Philippines Rice Institute flooded;;CC-BY-4.0;14.1412;121.2653;27.0;CRO;27.5;2112.0;Asia;Asia
+RU-Ch2;Russia;Chersky reference;;CC-BY-4.0;68.6169;161.3509;4.0;WET;-12.5;200.0;Europe;Asia
+RU-Che;Russia;Cherski;CC-BY-4.0;CC-BY-4.0;68.613;161.3414;6.0;WET;-11.0;197.0;Europe;Asia
+RU-Cok;Russia;Chokurdakh;CC-BY-4.0;CC-BY-4.0;70.8291;147.4943;48.0;OSH;-14.3;232.0;Europe;Asia
+RU-Fy2;Russia;Fyodorovskoye dry spruce;;CC-BY-4.0;56.4476;32.9019;;ENF;4.39;668.53;Europe;Asia
+RU-Fyo;Russia;Fyodorovskoye;CC-BY-4.0;;56.4615;32.9221;265.0;ENF;3.9;711.0;Europe;Asia
+RU-Ha1;Russia;Hakasia steppe;CC-BY-4.0;;54.7252;90.0022;446.0;GRA;-0.07;591.87;Europe;Asia
+RU-Sam;Russia;Samoylov;Tier 2;;72.3738;126.4958;;GRA;;;Europe;Asia
+RU-SkP;Russia;Yakutsk Spasskaya Pad larch;Tier 2;;62.255;129.168;246.0;DNF;;;Europe;Asia
+RU-Tks;Russia;Tiksi;Tier 2;;71.5943;128.8878;7.0;GRA;-12.7;323.0;Europe;Asia
+RU-Vrk;Russia;Seida/Vorkuta;Tier 2;Tier 2;67.0547;62.9405;100.0;CSH;-5.6;501.0;Europe;Asia
+SD-Dem;Sudan;Demokeya;CC-BY-4.0;;13.2829;30.4783;500.0;SAV;26.0;320.0;Africa;Africa
+SE-Deg;Sweden;Degero;;CC-BY-4.0;64.182;19.5565;270.0;GRA;1.2;523.0;Europe;Europe
+SE-St1;Sweden;Stordalen grassland;Tier 2;Tier 2;68.3541;19.0503;351.0;WET;-0.7;303.3;Europe;Europe
+SJ-Adv;Svalbard and Jan Mayen;Adventdalen;CC-BY-4.0;;78.186;15.923;17.0;WET;;;Europe;Europe
+SJ-Blv;Svalbard and Jan Mayen;Bayelva, Spitsbergen;CC-BY-4.0;;78.9216;11.8311;25.0;SNO;-4.5;400.0;Europe;Europe
+SN-Dhr;Senegal;Dahra;CC-BY-4.0;;15.4028;-15.4322;40.0;SAV;29.0;404.0;Africa;Africa
+UK-LBT;United Kingdom;London_BT;;CC-BY-4.0;51.5215;-0.1389;21.0;URB;11.3;592.0;Europe;Europe
+US-A03;USA;ARM-AMF3-Oliktok;;CC-BY-4.0;70.4953;-149.8823;5.0;BSV;-11.2;115.1;Americas;North America
+US-A10;USA;ARM-NSA-Barrow;;CC-BY-4.0;71.3242;-156.6149;4.0;BSV;-11.2;115.1;Americas;North America
+US-AR1;USA;ARM USDA UNL OSU Woodward Switchgrass 1;CC-BY-4.0;;36.4267;-99.42;611.0;GRA;;;Americas;North America
+US-AR2;USA;ARM USDA UNL OSU Woodward Switchgrass 2;CC-BY-4.0;;36.6358;-99.5975;646.0;GRA;;;Americas;North America
+US-ARM;USA;ARM Southern Great Plains site- Lamont;CC-BY-4.0;;36.6058;-97.4888;314.0;CRO;14.76;843.0;Americas;North America
+US-ARb;USA;ARM Southern Great Plains burn site- Lamont;CC-BY-4.0;;35.5497;-98.0402;424.0;GRA;;;Americas;North America
+US-ARc;USA;ARM Southern Great Plains control site- Lamont;CC-BY-4.0;;35.5465;-98.04;424.0;GRA;;;Americas;North America
+US-Atq;USA;Atqasuk;CC-BY-4.0;CC-BY-4.0;70.4696;-157.4089;15.0;WET;-9.7;93.0;Americas;North America
+US-BZB;USA;Bonanza Creek Thermokarst Bog;;CC-BY-4.0;64.6955;-148.3208;100.0;WET;-2.4;274.0;Americas;North America
+US-BZF;USA;Bonanza Creek Rich Fen;;CC-BY-4.0;64.7013;-148.3121;95.0;WET;-2.4;274.0;Americas;North America
+US-BZS;USA;Bonanza Creek Black Spruce;;CC-BY-4.0;64.6963;-148.3235;100.0;ENF;-2.4;274.0;Americas;North America
+US-Beo;USA;Barrow Environmental Observatory (BEO) tower;;CC-BY-4.0;71.281;-156.6123;;WET;-11.3;72.0;Americas;North America
+US-Bes;USA;Barrow-Bes (Biocomplexity Experiment South tower);;CC-BY-4.0;71.2809;-156.5965;4.6;WET;-12.0;173.0;Americas;North America
+US-Bi1;USA;Bouldin Island Alfalfa;;CC-BY-4.0;38.0992;-121.4993;-2.7;CRO;16.0;338.0;Americas;North America
+US-Bi2;USA;Bouldin Island corn;;CC-BY-4.0;38.1091;-121.5351;-5.0;CRO;16.0;338.0;Americas;North America
+US-Blo;USA;Blodgett Forest;CC-BY-4.0;;38.8953;-120.6328;1315.0;ENF;11.09;1226.0;Americas;North America
+US-CRT;USA;Curtice Walter-Berger cropland;CC-BY-4.0;CC-BY-4.0;41.6285;-83.3471;180.0;CRO;10.1;849.0;Americas;North America
+US-Cop;USA;Corral Pocket;CC-BY-4.0;;38.09;-109.39;1520.0;GRA;;;Americas;North America
+US-DPW;USA;Disney Wilderness Preserve Wetland;;CC-BY-4.0;28.0521;-81.4361;23.0;WET;22.6;1142.0;Americas;North America
+US-EDN;USA;Eden Landing Ecological Reserve;;CC-BY-4.0;37.6156;-122.114;;WET;;;Americas;North America
+US-EML;USA;Eight Mile Lake Permafrost thaw gradient, Healy Alaska.;;CC-BY-4.0;63.8784;-149.2536;700.0;OSH;-1.0;378.0;Americas;North America
+US-GBT;USA;GLEES Brooklyn Tower;CC-BY-4.0;;41.3658;-106.2397;3191.0;ENF;0.8;1200.0;Americas;North America
+US-GLE;USA;GLEES;CC-BY-4.0;;41.3665;-106.2399;3197.0;ENF;0.8;1200.0;Americas;North America
+US-Goo;USA;Goodwin Creek;CC-BY-4.0;;34.2547;-89.8735;87.0;GRA;15.89;1425.77;Americas;North America
+US-HRA;USA;Humnoke Farm Rice Field – Field A;;CC-BY-4.0;34.5852;-91.7517;;CRO;16.7;1250.0;Americas;North America
+US-HRC;USA;Humnoke Farm Rice Field – Field C;;CC-BY-4.0;34.5888;-91.7517;;CRO;16.7;1250.0;Americas;North America
+US-Ha1;USA;Harvard Forest EMS Tower (HFR1);CC-BY-4.0;;42.5378;-72.1715;340.0;DBF;6.62;1071.0;Americas;North America
+US-Ho1;USA;Howland Forest (main tower);;CC-BY-4.0;45.2041;-68.7402;60.0;ENF;5.27;1070.0;Americas;North America
+US-IB2;USA;Fermi National Accelerator Laboratory- Batavia (Prairie site);CC-BY-4.0;;41.8406;-88.241;226.5;GRA;9.04;930.25;Americas;North America
+US-ICs;USA;Imnavait Creek Watershed Wet Sedge Tundra;;CC-BY-4.0;68.6058;-149.311;920.0;WET;-7.4;318.0;Americas;North America
+US-Ivo;USA;Ivotuk;CC-BY-4.0;CC-BY-4.0;68.4865;-155.7503;568.0;WET;-8.28;304.0;Americas;North America
+US-KS1;USA;Kennedy Space Center (slash pine);CC-BY-4.0;;28.4583;-80.6709;1.0;ENF;21.9;1266.0;Americas;North America
+US-KS2;USA;Kennedy Space Center (scrub oak);CC-BY-4.0;;28.6086;-80.6715;3.0;CSH;21.66;1294.0;Americas;North America
+US-LA1;USA;Pointe-aux-Chenes Brackish Marsh;;CC-BY-4.0;29.5013;-90.4449;0.0;WET;20.7;1625.0;Americas;North America
+US-LA2;USA;Salvador WMA Freshwater Marsh;;CC-BY-4.0;29.8587;-90.2869;0.0;WET;20.2;1655.0;Americas;North America
+US-LWW;USA;Little Washita Watershed;CC-BY-4.0;;34.9604;-97.9789;365.0;GRA;16.09;805.12;Americas;North America
+US-Lin;USA;Lindcove Orange Orchard;CC-BY-4.0;;36.3566;-119.0922;131.0;CRO;;;Americas;North America
+US-Los;USA;Lost Creek;CC-BY-4.0;CC-BY-4.0;46.0827;-89.9792;480.0;WET;4.08;828.0;Americas;North America
+US-MAC;USA;MacArthur Agro-Ecology;;CC-BY-4.0;27.1632;-81.1873;;WET;;;Americas;North America
+US-MMS;USA;Morgan Monroe State Forest;CC-BY-4.0;;39.3232;-86.4131;275.0;DBF;10.85;1032.0;Americas;North America
+US-MRM;USA;Marsh Resource Meadowlands Mitigation Bank;;CC-BY-4.0;40.8164;-74.0435;1.0;WET;13.5;1120.0;Americas;North America
+US-Me1;USA;Metolius - Eyerly burn;CC-BY-4.0;;44.5794;-121.5;896.0;ENF;7.88;704.61;Americas;North America
+US-Me2;USA;Metolius mature ponderosa pine;CC-BY-4.0;;44.4523;-121.5574;1253.0;ENF;6.28;523.0;Americas;North America
+US-Me3;USA;Metolius-second young aged pine;CC-BY-4.0;;44.3154;-121.6078;1005.0;ENF;7.07;719.0;Americas;North America
+US-Me4;USA;Metolius-old aged ponderosa pine;CC-BY-4.0;;44.4992;-121.6224;922.0;ENF;7.61;1038.82;Americas;North America
+US-Me5;USA;Metolius-first young aged pine;CC-BY-4.0;;44.4372;-121.5668;1188.0;ENF;6.47;590.81;Americas;North America
+US-Me6;USA;Metolius Young Pine Burn;CC-BY-4.0;;44.3233;-121.6078;998.0;ENF;7.59;494.0;Americas;North America
+US-Myb;USA;Mayberry Wetland;CC-BY-4.0;CC-BY-4.0;38.0499;-121.765;-4.0;WET;15.9;338.0;Americas;North America
+US-NC4;USA;NC_AlligatorRiver;;CC-BY-4.0;35.7879;-75.9038;1.0;WET;16.6;1311.0;Americas;North America
+US-NGB;USA;NGEE Arctic Barrow;;CC-BY-4.0;71.28;-156.6092;5.273;SNO;-11.27;171.0;Americas;North America
+US-NGC;USA;NGEE Arctic Council;;CC-BY-4.0;64.8614;-163.7008;35.0;GRA;;;Americas;North America
+US-NR1;USA;Niwot Ridge Forest (LTER NWT1);CC-BY-4.0;;40.0329;-105.5464;3050.0;ENF;1.5;800.0;Americas;North America
+US-Ne1;USA;Mead - irrigated continuous maize site;CC-BY-4.0;;41.1651;-96.4766;361.0;CRO;10.07;790.37;Americas;North America
+US-Ne2;USA;Mead - irrigated maize-soybean rotation site;CC-BY-4.0;;41.1649;-96.4701;362.0;CRO;10.08;788.89;Americas;North America
+US-Ne3;USA;Mead - rainfed maize-soybean rotation site;CC-BY-4.0;;41.1797;-96.4397;363.0;CRO;10.11;783.68;Americas;North America
+US-ORv;USA;Olentangy River Wetland Research Park;CC-BY-4.0;CC-BY-4.0;40.0201;-83.0183;221.0;WET;11.63;1499.1;Americas;North America
+US-OWC;USA;Old Woman Creek;;CC-BY-4.0;41.3795;-82.5125;174.0;WET;10.7;930.0;Americas;North America
+US-Oho;USA;Oak Openings;CC-BY-4.0;;41.5545;-83.8438;230.0;DBF;10.1;849.0;Americas;North America
+US-PFa;USA;Park Falls/WLEF;CC-BY-4.0;CC-BY-4.0;45.9459;-90.2723;470.0;MF;4.33;823.0;Americas;North America
+US-Prr;USA;Poker Flat Research Range Black Spruce Forest;CC-BY-4.0;;65.1237;-147.4876;210.0;ENF;-2.0;275.0;Americas;North America
+US-SRC;USA;Santa Rita Creosote;CC-BY-4.0;;31.9083;-110.8395;950.0;OSH;22.0;330.0;Americas;North America
+US-SRG;USA;Santa Rita Grassland;CC-BY-4.0;;31.7894;-110.8277;1291.0;GRA;17.0;420.0;Americas;North America
+US-SRM;USA;Santa Rita Mesquite;CC-BY-4.0;;31.8214;-110.8661;1120.0;WSA;17.92;380.0;Americas;North America
+US-Snd;USA;Sherman Island;;CC-BY-4.0;38.0366;-121.754;-5.0;GRA;15.6;358.0;Americas;North America
+US-Sne;USA;Sherman Island Restored Wetland;;CC-BY-4.0;38.0369;-121.7547;-5.0;GRA;16.09;311.0;Americas;North America
+US-Srr;USA;Suisun marsh - Rush Ranch;;CC-BY-4.0;38.2006;-122.0264;8.0;WET;15.1;326.0;Americas;North America
+US-StJ;USA;St Jones Reserve;;CC-BY-4.0;39.0882;-75.4372;6.7;WET;13.5;1121.0;Americas;North America
+US-Sta;USA;Saratoga;CC-BY-4.0;;41.3966;-106.8024;2069.0;OSH;5.1;;Americas;North America
+US-Syv;USA;Sylvania Wilderness Area;CC-BY-4.0;;46.242;-89.3477;540.0;MF;3.81;826.0;Americas;North America
+US-Ton;USA;Tonzi Ranch;CC-BY-4.0;;38.4309;-120.966;177.0;WSA;15.8;559.0;Americas;North America
+US-Tw1;USA;Twitchell Wetland West Pond;CC-BY-4.0;CC-BY-4.0;38.1074;-121.6469;-5.0;WET;15.5;421.0;Americas;North America
+US-Tw2;USA;Twitchell Corn;CC-BY-4.0;;38.1047;-121.6433;-5.0;CRO;15.5;421.0;Americas;North America
+US-Tw3;USA;Twitchell Alfalfa;CC-BY-4.0;CC-BY-4.0;38.1152;-121.6469;-4.0;CRO;15.6;421.0;Americas;North America
+US-Tw4;USA;Twitchell East End Wetland;CC-BY-4.0;CC-BY-4.0;38.1027;-121.6413;-5.0;WET;15.6;421.0;Americas;North America
+US-Tw5;USA;East Pond Wetland;;CC-BY-4.0;38.1072;-121.6426;-5.0;WET;15.5;421.0;Americas;North America
+US-Twt;USA;Twitchell Island;CC-BY-4.0;CC-BY-4.0;38.1087;-121.6531;-7.0;CRO;15.6;421.0;Americas;North America
+US-UMB;USA;Univ. of Mich. Biological Station;CC-BY-4.0;;45.5598;-84.7138;234.0;DBF;5.83;803.0;Americas;North America
+US-UMd;USA;UMBS Disturbance;CC-BY-4.0;;45.5625;-84.6975;239.0;DBF;5.83;803.0;Americas;North America
+US-Uaf;USA;University of Alaska, Fairbanks;;CC-BY-4.0;64.8663;-147.8555;155.0;ENF;-2.9;263.0;Americas;North America
+US-Var;USA;Vaira Ranch- Ione;CC-BY-4.0;;38.4133;-120.9508;129.0;GRA;15.8;559.0;Americas;North America
+US-WCr;USA;Willow Creek;CC-BY-4.0;;45.8059;-90.0799;520.0;DBF;4.02;787.0;Americas;North America
+US-WPT;USA;Winous Point North Marsh;CC-BY-4.0;CC-BY-4.0;41.4646;-82.9962;175.0;WET;10.1;849.0;Americas;North America
+US-Whs;USA;Walnut Gulch Lucky Hills Shrub;CC-BY-4.0;;31.7438;-110.0522;1370.0;OSH;17.6;320.0;Americas;North America
+US-Wi0;USA;Young red pine (YRP);CC-BY-4.0;;46.6188;-91.0814;349.0;ENF;;;Americas;North America
+US-Wi1;USA;Intermediate hardwood (IHW);CC-BY-4.0;;46.7305;-91.2329;352.0;DBF;;;Americas;North America
+US-Wi2;USA;Intermediate red pine (IRP);CC-BY-4.0;;46.6869;-91.1528;395.0;ENF;;;Americas;North America
+US-Wi3;USA;Mature hardwood (MHW);CC-BY-4.0;;46.6347;-91.0987;411.0;DBF;;;Americas;North America
+US-Wi4;USA;Mature red pine (MRP);CC-BY-4.0;;46.7393;-91.1663;352.0;ENF;;;Americas;North America
+US-Wi5;USA;Mixed young jack pine (MYJP);CC-BY-4.0;;46.6531;-91.0858;353.0;ENF;;;Americas;North America
+US-Wi6;USA;Pine barrens #1 (PB1);CC-BY-4.0;;46.6249;-91.2982;371.0;OSH;;;Americas;North America
+US-Wi7;USA;Red pine clearcut (RPCC);CC-BY-4.0;;46.6491;-91.0693;335.0;OSH;;;Americas;North America
+US-Wi8;USA;Young hardwood clearcut (YHW);CC-BY-4.0;;46.7223;-91.2524;348.0;DBF;;;Americas;North America
+US-Wi9;USA;Young Jack pine (YJP);CC-BY-4.0;;46.7385;-91.0746;350.0;ENF;;;Americas;North America
+US-Wkg;USA;Walnut Gulch Kendall Grasslands;CC-BY-4.0;;31.7365;-109.9419;1531.0;GRA;15.64;407.0;Americas;North America
+ZA-Kru;South Africa;Skukuza;Tier 2;;-25.0197;31.4969;359.0;SAV;21.9;547.0;Africa;Africa
+ZM-Mon;Zambia;Mongu;CC-BY-4.0;;-15.4391;23.2525;1053.0;DBF;25.0;945.0;Africa;Africa
