@@ -50,4 +50,11 @@ If you feel you can solve the error on your own, you are invited to create a mer
 
 ---
 
-A detailed description of the method can be obtained from Hannemann et al. 2023
+A detailed description of the method can be obtained from 
+
+Hannemann, M., García-García, A., Poyatos, R., Mahecha, M. D., & Peng, J. (2024). Estimating transpiration globally by integrating the Priestley-Taylor model with neural networks. In Environmental Research Letters (Vol. 19, Issue 11, p. 114089). IOP Publishing. https://doi.org/10.1088/1748-9326/ad8506
+
+
+The produced data from the linked study can be obtained from
+
+[10.5281/zenodo.13338222](https://doi.org/10.5281/zenodo.13338222)
